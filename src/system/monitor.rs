@@ -196,6 +196,22 @@ pub fn get_governor() -> String {
         .unwrap_or_else(|_| "unknown".to_string())
 }
 
+/// Get available memory in MB (memory that can be safely allocated)
+pub fn get_available_memory_mb() -> u64 {
+    if let Ok(meminfo) = fs::read_to_string("/proc/meminfo") {
+        for line in meminfo.lines() {
+            if line.starts_with("MemAvailable:") {
+                if let Some(kb_str) = line.split_whitespace().nth(1) {
+                    if let Ok(kb) = kb_str.parse::<u64>() {
+                        return kb / 1024;
+                    }
+                }
+            }
+        }
+    }
+    0
+}
+
 /// Get memory usage
 pub fn get_memory_usage() -> (u64, u64) {
     let mut total_mb = 0u64;
