@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.1.0)'
+        required: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Linux ARM64 (for Raspberry Pi)
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            cross: true
+            artifact_name: pi-under-pressure
+            asset_name: pi-under-pressure-linux-arm64
+
+          # Linux ARM64 with musl (static binary)
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            cross: true
+            artifact_name: pi-under-pressure
+            asset_name: pi-under-pressure-linux-arm64-musl
+
+          # Linux x86_64 (for development/testing)
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            cross: false
+            artifact_name: pi-under-pressure
+            asset_name: pi-under-pressure-linux-amd64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build with cross
+        if: matrix.cross
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Build with cargo
+        if: "!matrix.cross"
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            # For cross-compiled binaries, use the appropriate strip
+            if command -v aarch64-linux-gnu-strip &> /dev/null; then
+              aarch64-linux-gnu-strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+            fi
+          else
+            strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          for dir in artifacts/*/; do
+            name=$(basename "$dir")
+            cp "$dir"/* "release/$name"
+            chmod +x "release/$name"
+          done
+          ls -la release/
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: Pi Under Pressure ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          files: release/*
+          body: |
+            ## Pi Under Pressure ${{ steps.get_version.outputs.VERSION }}
+
+            Stability tester for overclocked Raspberry Pi 5.
+
+            ### Installation
+
+            **One-liner install:**
+            ```bash
+            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+            ```
+
+            **Manual download:**
+            - `pi-under-pressure-linux-arm64` - For Raspberry Pi 5 (recommended)
+            - `pi-under-pressure-linux-arm64-musl` - Static binary for Raspberry Pi 5
+            - `pi-under-pressure-linux-amd64` - For x86_64 Linux (testing only)
+
+            ### Usage
+
+            ```bash
+            # Run 30-minute stability test
+            pi-under-pressure --duration 30m
+
+            # Run with video encoder stress
+            pi-under-pressure --duration 1h --video
+            ```
+
+            See [README](https://github.com/${{ github.repository }}#readme) for full documentation.
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+
+      - name: Run tests
+        run: cargo test --all-features
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy -- -D warnings

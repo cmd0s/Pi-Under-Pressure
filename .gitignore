@@ -1,0 +1,22 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+*.log
+.pi-under-pressure-*
+
+# Release artifacts
+*.tar.gz
+*.zip

@@ -1,0 +1,58 @@
+[package]
+name = "pi-under-pressure"
+version = "0.1.0"
+edition = "2021"
+authors = ["Pi Under Pressure Contributors"]
+description = "Stability tester for overclocked Raspberry Pi 5"
+license = "MIT"
+repository = "https://github.com/cmd0s/Pi-Under-Pressure"
+readme = "README.md"
+keywords = ["raspberry-pi", "stress-test", "overclock", "stability", "rpi5"]
+categories = ["command-line-utilities", "hardware-support"]
+
+[dependencies]
+# CLI parsing
+clap = { version = "4", features = ["derive"] }
+
+# TUI framework
+ratatui = "0.29"
+crossterm = "0.28"
+
+# System info
+sysinfo = "0.32"
+
+# Linux-specific functionality
+nix = { version = "0.29", features = ["fs"] }
+libc = "0.2"
+
+# Async runtime
+tokio = { version = "1", features = ["rt-multi-thread", "time", "signal", "sync", "fs", "io-util", "macros"] }
+
+# Parallel processing for stress tests
+rayon = "1.10"
+
+# Random number generation
+rand = "0.8"
+
+# Serialization (for JSON output)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Duration parsing (e.g., "30m", "1h")
+humantime = "2"
+
+# Error handling
+thiserror = "2"
+
+# For AES stress test
+aes = "0.8"
+cipher = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.release.build-override]
+opt-level = 3
