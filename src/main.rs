@@ -98,10 +98,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Determine what to test
+    // NVMe stress only runs with --extended or --nvme-only flags (not auto-detected)
     let stress_config = StressConfig {
         cpu: !args.memory_only && !args.nvme_only,
         memory: !args.cpu_only && !args.nvme_only,
-        nvme: (args.extended || nvme_info.is_some()) && !args.cpu_only && !args.memory_only,
+        nvme: (args.extended || args.nvme_only) && nvme_info.is_some() && !args.cpu_only && !args.memory_only,
         video: args.video,
         threads: args.threads.unwrap_or_else(num_cpus),
         duration,
