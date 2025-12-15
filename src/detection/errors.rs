@@ -1,7 +1,7 @@
 use std::process::Command;
 use std::time::{Duration, SystemTime};
 
-/// Error patterns to look for in dmesg/journalctl
+/// Error patterns to look for in dmesg/journalctl (broad - for general diagnostics)
 const ERROR_PATTERNS: &[&str] = &[
     "I/O error",
     "blk_update_request",
@@ -16,10 +16,46 @@ const ERROR_PATTERNS: &[&str] = &[
     "Hardware Error",
     "Kernel panic",
     "Oops",
-    "BUG:",
-    "WARNING:",
-    "Call Trace",
 ];
+
+/// Check if a log line is an actual I/O error (storage/device related)
+/// This is more strict than is_relevant_error() - only catches real I/O issues
+fn is_io_error(line: &str) -> bool {
+    let line_lower = line.to_lowercase();
+
+    // Direct I/O error patterns - always an I/O error
+    if line_lower.contains("i/o error")
+        || line_lower.contains("blk_update_request")
+        || line_lower.contains("buffer i/o error")
+    {
+        return true;
+    }
+
+    // Device-specific errors (must have "error" context)
+    if (line_lower.contains("mmc") || line_lower.contains("ata") || line_lower.contains("sd"))
+        && line_lower.contains("error")
+    {
+        return true;
+    }
+
+    // NVMe specific (must have error/timeout/i/o context)
+    if line_lower.contains("nvme")
+        && (line_lower.contains("error")
+            || line_lower.contains("timeout")
+            || line_lower.contains("i/o"))
+    {
+        return true;
+    }
+
+    // PCIe AER errors (must have "error" context)
+    if (line_lower.contains("aer") || line_lower.contains("pcieport"))
+        && line_lower.contains("error")
+    {
+        return true;
+    }
+
+    false
+}
 
 /// Check dmesg for I/O and other errors
 pub fn check_dmesg_errors() -> Vec<String> {
@@ -46,6 +82,26 @@ pub fn check_dmesg_errors() -> Vec<String> {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
                 if is_relevant_error(line) && !errors.contains(&line.to_string()) {
+                    errors.push(line.to_string());
+                }
+            }
+        }
+    }
+
+    errors
+}
+
+/// Check dmesg for ONLY I/O related errors (not general kernel warnings)
+/// Use this for the final report I/O error count
+pub fn check_io_errors() -> Vec<String> {
+    let mut errors = Vec::new();
+
+    // Only check error level (not warnings)
+    if let Ok(output) = Command::new("dmesg").args(["--level=err"]).output() {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if is_io_error(line) {
                     errors.push(line.to_string());
                 }
             }
@@ -201,8 +257,33 @@ mod tests {
     }
 
     #[test]
+    fn test_is_io_error() {
+        // Should match actual I/O errors
+        assert!(is_io_error("blk_update_request: I/O error, dev nvme0n1"));
+        assert!(is_io_error("Buffer I/O error on device sda1"));
+        assert!(is_io_error("nvme0n1: I/O error"));
+        assert!(is_io_error("nvme: controller timeout"));
+        assert!(is_io_error("ata1: error handling"));
+        assert!(is_io_error("pcieport: AER error"));
+
+        // Should NOT match generic kernel messages
+        assert!(!is_io_error("[ 422.386893] Call trace:"));
+        assert!(!is_io_error("WARNING: CPU: 0 PID: 1234"));
+        assert!(!is_io_error("BUG: something wrong"));
+        assert!(!is_io_error("Normal log message"));
+        assert!(!is_io_error("USB device connected"));
+        assert!(!is_io_error("nvme0n1: starting up")); // nvme without error context
+    }
+
+    #[test]
     fn test_check_dmesg_errors() {
         // Just ensure it doesn't panic
         let _ = check_dmesg_errors();
+    }
+
+    #[test]
+    fn test_check_io_errors() {
+        // Just ensure it doesn't panic
+        let _ = check_io_errors();
     }
 }

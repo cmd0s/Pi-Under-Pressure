@@ -153,7 +153,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Collect final errors from dmesg
-    let io_errors = detection::errors::check_dmesg_errors();
+    let io_errors = detection::errors::check_io_errors();
 
     // Generate and display final report
     let report = stress::generate_report(&test_result, &io_errors, duration);
