@@ -109,13 +109,19 @@ pub async fn run_stress_test(
     };
 
     // Start memory stress threads
+    // Calculate memory allocation: use half of total RAM, divided among threads
     let mem_handles: Vec<_> = if config.memory {
-        (0..2.min(config.threads))
+        let (_, total_mb) = monitor::get_memory_usage();
+        let num_mem_threads = 2.min(config.threads);
+        // Use half of total RAM, divided by number of threads
+        let allocation_per_thread = (total_mb as usize * 1024 * 1024 / 2) / num_mem_threads;
+
+        (0..num_mem_threads)
             .map(|_| {
                 let running = running.clone();
                 let errors = memory_errors.clone();
                 std::thread::spawn(move || {
-                    memory::run_memory_stress(running, errors);
+                    memory::run_memory_stress(running, errors, allocation_per_thread);
                 })
             })
             .collect()

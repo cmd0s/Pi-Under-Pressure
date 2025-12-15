@@ -2,15 +2,17 @@ use rand::Rng;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
-/// Memory chunk size in bytes (64 MB)
-const CHUNK_SIZE: usize = 64 * 1024 * 1024;
+/// Minimum memory chunk size in bytes (64 MB)
+const MIN_CHUNK_SIZE: usize = 64 * 1024 * 1024;
 
 /// Run memory stress test with multiple patterns
-pub fn run_memory_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>) {
+/// allocation_bytes: how much memory this thread should allocate
+pub fn run_memory_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>, allocation_bytes: usize) {
     let mut iteration: u64 = 0;
 
-    // Allocate memory buffer
-    let mut buffer: Vec<u8> = vec![0; CHUNK_SIZE];
+    // Allocate memory buffer (at least MIN_CHUNK_SIZE)
+    let alloc_size = allocation_bytes.max(MIN_CHUNK_SIZE);
+    let mut buffer: Vec<u8> = vec![0; alloc_size];
 
     while running.load(Ordering::Relaxed) {
         // Rotate between different stress methods
