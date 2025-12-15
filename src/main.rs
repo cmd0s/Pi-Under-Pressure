@@ -16,7 +16,8 @@ use pi_under_pressure::{
 #[command(name = "pi-under-pressure")]
 #[command(author = "Pi Under Pressure Contributors")]
 #[command(version)]
-#[command(about = "Stability tester for overclocked Raspberry Pi 5", long_about = None)]
+#[command(about = "Stability tester for overclocked Raspberry Pi 5")]
+#[command(after_help = "NOTE: Run with sudo for full functionality (hardware sensors, NVMe stress testing).\n\nExample: sudo pi-under-pressure --duration 1h")]
 struct Args {
     /// Test duration (e.g., 30m, 1h, 2h30m)
     #[arg(short, long, default_value = "30m")]

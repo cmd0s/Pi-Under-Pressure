@@ -55,6 +55,14 @@ impl ThrottleStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct FanStatus {
+    /// Fan speed as percentage (0-100)
+    pub speed_percent: Option<u8>,
+    /// Fan speed in RPM (if available)
+    pub rpm: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MonitorStats {
     pub cpu_temp_c: f32,
     pub cpu_freq_mhz: u32,
@@ -62,8 +70,10 @@ pub struct MonitorStats {
     pub throttle_status: ThrottleStatus,
     pub governor: String,
     pub cpu_usage_percent: f32,
+    pub cpu_usage_per_core: Vec<f32>,
     pub mem_used_mb: u64,
     pub mem_total_mb: u64,
+    pub fan_status: FanStatus,
 }
 
 /// Get CPU temperature using vcgencmd
@@ -189,7 +199,141 @@ pub fn get_memory_usage() -> (u64, u64) {
     (used_mb, total_mb)
 }
 
-/// Collect all monitoring stats
+/// CPU stat snapshot for calculating usage
+#[derive(Default, Clone)]
+pub struct CpuStatSnapshot {
+    /// Per-core stats: (user, nice, system, idle, iowait, irq, softirq)
+    pub cores: Vec<(u64, u64, u64, u64, u64, u64, u64)>,
+}
+
+impl CpuStatSnapshot {
+    /// Read current CPU stats from /proc/stat
+    pub fn read() -> Self {
+        let mut cores = Vec::new();
+
+        if let Ok(stat) = fs::read_to_string("/proc/stat") {
+            for line in stat.lines() {
+                // Look for lines like "cpu0", "cpu1", etc.
+                if line.starts_with("cpu") && !line.starts_with("cpu ") {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 8 {
+                        let user = parts[1].parse().unwrap_or(0);
+                        let nice = parts[2].parse().unwrap_or(0);
+                        let system = parts[3].parse().unwrap_or(0);
+                        let idle = parts[4].parse().unwrap_or(0);
+                        let iowait = parts[5].parse().unwrap_or(0);
+                        let irq = parts[6].parse().unwrap_or(0);
+                        let softirq = parts[7].parse().unwrap_or(0);
+                        cores.push((user, nice, system, idle, iowait, irq, softirq));
+                    }
+                }
+            }
+        }
+
+        Self { cores }
+    }
+
+    /// Calculate per-core usage percentage compared to a previous snapshot
+    pub fn calculate_usage(&self, prev: &CpuStatSnapshot) -> Vec<f32> {
+        let mut usage = Vec::new();
+
+        for (i, curr) in self.cores.iter().enumerate() {
+            if let Some(prev_core) = prev.cores.get(i) {
+                let curr_total = curr.0 + curr.1 + curr.2 + curr.3 + curr.4 + curr.5 + curr.6;
+                let prev_total =
+                    prev_core.0 + prev_core.1 + prev_core.2 + prev_core.3 + prev_core.4 + prev_core.5 + prev_core.6;
+
+                let curr_idle = curr.3 + curr.4;
+                let prev_idle = prev_core.3 + prev_core.4;
+
+                let total_diff = curr_total.saturating_sub(prev_total);
+                let idle_diff = curr_idle.saturating_sub(prev_idle);
+
+                if total_diff > 0 {
+                    let usage_pct = ((total_diff - idle_diff) as f32 / total_diff as f32) * 100.0;
+                    usage.push(usage_pct.clamp(0.0, 100.0));
+                } else {
+                    usage.push(0.0);
+                }
+            } else {
+                usage.push(0.0);
+            }
+        }
+
+        usage
+    }
+}
+
+/// Get fan speed from hwmon or vcgencmd
+pub fn get_fan_status() -> FanStatus {
+    let mut status = FanStatus::default();
+
+    // Try to find PWM fan in hwmon
+    if let Ok(entries) = fs::read_dir("/sys/class/hwmon") {
+        for entry in entries.flatten() {
+            let path = entry.path();
+
+            // Check for PWM value (0-255)
+            let pwm_path = path.join("pwm1");
+            if pwm_path.exists() {
+                if let Ok(pwm_str) = fs::read_to_string(&pwm_path) {
+                    if let Ok(pwm) = pwm_str.trim().parse::<u32>() {
+                        // Convert 0-255 to percentage
+                        status.speed_percent = Some(((pwm * 100) / 255).min(100) as u8);
+                    }
+                }
+            }
+
+            // Check for fan RPM
+            let rpm_path = path.join("fan1_input");
+            if rpm_path.exists() {
+                if let Ok(rpm_str) = fs::read_to_string(&rpm_path) {
+                    if let Ok(rpm) = rpm_str.trim().parse::<u32>() {
+                        status.rpm = Some(rpm);
+                    }
+                }
+            }
+
+            // If we found fan data, stop looking
+            if status.speed_percent.is_some() || status.rpm.is_some() {
+                break;
+            }
+        }
+    }
+
+    // Fallback: try Raspberry Pi 5 specific fan control
+    if status.speed_percent.is_none() {
+        // RPi5 official cooler uses cooling_device interface
+        if let Ok(entries) = fs::read_dir("/sys/class/thermal") {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.to_string_lossy().contains("cooling_device") {
+                    let cur_state = path.join("cur_state");
+                    let max_state = path.join("max_state");
+
+                    if let (Ok(cur_str), Ok(max_str)) = (
+                        fs::read_to_string(&cur_state),
+                        fs::read_to_string(&max_state),
+                    ) {
+                        if let (Ok(cur), Ok(max)) = (
+                            cur_str.trim().parse::<u32>(),
+                            max_str.trim().parse::<u32>(),
+                        ) {
+                            if max > 0 {
+                                status.speed_percent = Some(((cur * 100) / max).min(100) as u8);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    status
+}
+
+/// Collect all monitoring stats (without per-core CPU usage)
 pub fn collect_stats() -> MonitorStats {
     let (mem_used, mem_total) = get_memory_usage();
 
@@ -200,9 +344,39 @@ pub fn collect_stats() -> MonitorStats {
         throttle_status: get_throttle_status(),
         governor: get_governor(),
         cpu_usage_percent: 0.0, // Will be calculated by stress module
+        cpu_usage_per_core: Vec::new(), // Will be calculated with CpuStatSnapshot
         mem_used_mb: mem_used,
         mem_total_mb: mem_total,
+        fan_status: get_fan_status(),
     }
+}
+
+/// Collect stats with per-core CPU usage calculation
+pub fn collect_stats_with_cpu(prev_snapshot: &CpuStatSnapshot) -> (MonitorStats, CpuStatSnapshot) {
+    let (mem_used, mem_total) = get_memory_usage();
+    let current_snapshot = CpuStatSnapshot::read();
+    let per_core = current_snapshot.calculate_usage(prev_snapshot);
+
+    let avg_usage = if per_core.is_empty() {
+        0.0
+    } else {
+        per_core.iter().sum::<f32>() / per_core.len() as f32
+    };
+
+    let stats = MonitorStats {
+        cpu_temp_c: get_cpu_temp(),
+        cpu_freq_mhz: get_cpu_freq(),
+        gpu_freq_mhz: get_gpu_freq(),
+        throttle_status: get_throttle_status(),
+        governor: get_governor(),
+        cpu_usage_percent: avg_usage,
+        cpu_usage_per_core: per_core,
+        mem_used_mb: mem_used,
+        mem_total_mb: mem_total,
+        fan_status: get_fan_status(),
+    };
+
+    (stats, current_snapshot)
 }
 
 #[cfg(test)]

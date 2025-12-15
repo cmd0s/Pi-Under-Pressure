@@ -56,15 +56,17 @@ cargo build --release
 
 ### Basic Usage
 
+**Note:** Root privileges (sudo) are required for full functionality.
+
 ```bash
 # Run 30-minute stability test (default)
-pi-under-pressure
+sudo pi-under-pressure
 
 # Run 1-hour test
-pi-under-pressure --duration 1h
+sudo pi-under-pressure --duration 1h
 
 # Run 2-hour test with video encoder stress
-pi-under-pressure --duration 2h --video
+sudo pi-under-pressure --duration 2h --video
 ```
 
 ### Options
@@ -180,9 +182,15 @@ force_turbo=1
 
 - Raspberry Pi 5 (other models may work but are not officially supported)
 - Raspberry Pi OS (Bookworm) or compatible Linux distribution
+- **Root privileges (sudo)** - required for accessing hardware sensors and NVMe stress testing
 - `vcgencmd` for temperature/throttling monitoring (usually pre-installed)
 - Optional: `smartctl` for NVMe SMART data
 - Optional: `ffmpeg` for video encoder stress testing
+
+**Note:** Run with `sudo` for full functionality:
+```bash
+sudo pi-under-pressure --duration 30m
+```
 
 ## License
 

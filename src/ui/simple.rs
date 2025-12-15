@@ -205,10 +205,10 @@ pub fn display_system_info(
 
 /// Display real-time stats in simple format
 pub fn display_stats(stats: &StressStats, duration_secs: u64, no_color: bool) {
-    let (green, yellow, red, reset) = if no_color {
-        ("", "", "", "")
+    let (green, yellow, red, cyan, reset) = if no_color {
+        ("", "", "", "", "")
     } else {
-        (GREEN, YELLOW, RED, RESET)
+        (GREEN, YELLOW, RED, CYAN, RESET)
     };
 
     let elapsed = format_duration(stats.elapsed_secs);
@@ -230,14 +230,23 @@ pub fn display_stats(stats: &StressStats, duration_secs: u64, no_color: bool) {
         format!("{}None{}", green, reset)
     };
 
+    // Fan speed
+    let fan_str = match (stats.fan_status.speed_percent, stats.fan_status.rpm) {
+        (Some(pct), Some(rpm)) => format!("{}{}%({} RPM){}", cyan, pct, rpm, reset),
+        (Some(pct), None) => format!("{}{}%{}", cyan, pct, reset),
+        (None, Some(rpm)) => format!("{}{} RPM{}", cyan, rpm, reset),
+        (None, None) => format!("{}N/A{}", cyan, reset),
+    };
+
     print!(
-        "\r[{}] CPU: {}{:.1}°C{} | Freq: {} MHz | Throttle: {} | RAM: {}/{} MB | Progress: {:.0}% | ETA: {}   ",
+        "\r[{}] CPU: {}{:.1}°C{} | Freq: {} MHz | Throttle: {} | Fan: {} | RAM: {}/{} MB | {:.0}% | ETA: {}   ",
         elapsed,
         temp_color,
         stats.cpu_temp_c,
         reset,
         stats.cpu_freq_mhz,
         throttle_str,
+        fan_str,
         stats.mem_used_mb,
         stats.mem_total_mb,
         stats.progress_percent,

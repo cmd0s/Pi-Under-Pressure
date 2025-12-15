@@ -110,15 +110,19 @@ pub async fn run_tui(
 fn render_ui(frame: &mut Frame, stats: &StressStats, total_secs: u64) {
     let size = frame.area();
 
+    // Calculate stats height based on number of cores (2 header lines + per-core bars + borders)
+    let num_cores = stats.cpu_usage_per_core.len().max(4);
+    let stats_height = (2 + num_cores + 2) as u16; // +2 for borders
+
     // Create main layout
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Length(3),  // Title
-            Constraint::Length(8),  // Stats
-            Constraint::Length(5),  // Progress
-            Constraint::Length(3),  // Footer
+            Constraint::Length(3),           // Title
+            Constraint::Length(stats_height), // Stats (dynamic based on cores)
+            Constraint::Length(5),           // Progress
+            Constraint::Length(3),           // Footer
         ])
         .split(size);
 
@@ -166,7 +170,7 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(area);
 
-    // Left column - CPU stats
+    // Left column - CPU stats with per-core usage
     let cpu_temp_color = if stats.cpu_temp_c >= 85.0 {
         Color::Red
     } else if stats.cpu_temp_c >= 80.0 {
@@ -183,9 +187,10 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         Span::styled("None", Style::default().fg(Color::Green))
     };
 
-    let cpu_info = Paragraph::new(vec![
+    // Build CPU info lines including per-core usage
+    let mut cpu_lines = vec![
         Line::from(vec![
-            Span::raw("  CPU Temperature:  "),
+            Span::raw("  Temp: "),
             Span::styled(
                 format!("{:.1}°C", stats.cpu_temp_c),
                 Style::default().fg(cpu_temp_color).add_modifier(Modifier::BOLD),
@@ -194,39 +199,75 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
                 format!(" (max: {:.1}°C)", stats.cpu_temp_max),
                 Style::default().fg(Color::DarkGray),
             ),
-        ]),
-        Line::from(vec![
-            Span::raw("  CPU Frequency:    "),
+            Span::raw("  Freq: "),
             Span::styled(
                 format!("{} MHz", stats.cpu_freq_mhz),
                 Style::default().fg(Color::Cyan),
             ),
         ]),
         Line::from(vec![
-            Span::raw("  Throttling:       "),
+            Span::raw("  Throttling: "),
             throttle_status,
-        ]),
-        Line::from(vec![
-            Span::raw("  CPU Errors:       "),
+            Span::raw("  Errors: "),
             Span::styled(
                 format!("{}", stats.cpu_errors),
                 Style::default().fg(if stats.cpu_errors > 0 { Color::Red } else { Color::Green }),
             ),
         ]),
-    ])
-    .block(
-        Block::default()
-            .title(" CPU ")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Blue)),
-    );
+    ];
+
+    // Add per-core CPU usage bars
+    for (i, usage) in stats.cpu_usage_per_core.iter().enumerate() {
+        let bar_width = 12;
+        let filled = ((usage / 100.0) * bar_width as f32) as usize;
+        let bar_color = if *usage >= 95.0 {
+            Color::Green
+        } else if *usage >= 50.0 {
+            Color::Yellow
+        } else {
+            Color::Red
+        };
+
+        cpu_lines.push(Line::from(vec![
+            Span::raw(format!("  CPU{}: [", i)),
+            Span::styled(
+                "█".repeat(filled.min(bar_width)),
+                Style::default().fg(bar_color),
+            ),
+            Span::styled(
+                "░".repeat(bar_width.saturating_sub(filled)),
+                Style::default().fg(Color::DarkGray),
+            ),
+            Span::raw("] "),
+            Span::styled(
+                format!("{:5.1}%", usage),
+                Style::default().fg(bar_color),
+            ),
+        ]));
+    }
+
+    let cpu_info = Paragraph::new(cpu_lines)
+        .block(
+            Block::default()
+                .title(" CPU ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Blue)),
+        );
 
     frame.render_widget(cpu_info, chunks[0]);
 
-    // Right column - Memory and NVMe stats
+    // Right column - Memory, NVMe, and Fan stats
     let nvme_temp_str = match stats.nvme_temp_c {
         Some(temp) => format!("{:.1}°C", temp),
         None => "N/A".to_string(),
+    };
+
+    // Fan status string
+    let fan_str = match (stats.fan_status.speed_percent, stats.fan_status.rpm) {
+        (Some(pct), Some(rpm)) => format!("{}% ({} RPM)", pct, rpm),
+        (Some(pct), None) => format!("{}%", pct),
+        (None, Some(rpm)) => format!("{} RPM", rpm),
+        (None, None) => "N/A".to_string(),
     };
 
     let mem_info = Paragraph::new(vec![
@@ -256,6 +297,13 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             Span::styled(
                 format!("{}", stats.io_errors),
                 Style::default().fg(if stats.io_errors > 0 { Color::Red } else { Color::Green }),
+            ),
+        ]),
+        Line::from(vec![
+            Span::raw("  Fan Speed:        "),
+            Span::styled(
+                fan_str,
+                Style::default().fg(Color::Cyan),
             ),
         ]),
     ])

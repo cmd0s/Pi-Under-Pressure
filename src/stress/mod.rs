@@ -4,7 +4,7 @@ pub mod nvme;
 pub mod video;
 
 use crate::detection::{self, nvme::NvmeInfo};
-use crate::system::monitor::{self, MonitorStats, ThrottleStatus};
+use crate::system::monitor::{self, CpuStatSnapshot, FanStatus, MonitorStats, ThrottleStatus};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -28,6 +28,7 @@ pub struct StressStats {
     pub cpu_temp_max: f32,
     pub cpu_freq_mhz: u32,
     pub throttle_status: ThrottleStatus,
+    pub cpu_usage_per_core: Vec<f32>,
     pub mem_used_mb: u64,
     pub mem_total_mb: u64,
     pub nvme_temp_c: Option<f32>,
@@ -37,6 +38,7 @@ pub struct StressStats {
     pub memory_errors: u64,
     pub nvme_errors: u64,
     pub progress_percent: f32,
+    pub fan_status: FanStatus,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -145,6 +147,8 @@ pub async fn run_stress_test(
 
     // Monitoring loop
     let mut last_throttle_raw: u32 = 0;
+    let mut cpu_snapshot = CpuStatSnapshot::read();
+
     while running.load(Ordering::SeqCst) {
         let elapsed = start_time.elapsed();
         if elapsed >= config.duration {
@@ -152,8 +156,9 @@ pub async fn run_stress_test(
             break;
         }
 
-        // Collect stats
-        let monitor_stats = monitor::collect_stats();
+        // Collect stats with CPU usage
+        let (monitor_stats, new_snapshot) = monitor::collect_stats_with_cpu(&cpu_snapshot);
+        cpu_snapshot = new_snapshot;
 
         // Track temperature
         temp_samples.push(monitor_stats.cpu_temp_c);
@@ -194,6 +199,7 @@ pub async fn run_stress_test(
             cpu_temp_max: max_cpu_temp,
             cpu_freq_mhz: monitor_stats.cpu_freq_mhz,
             throttle_status: monitor_stats.throttle_status,
+            cpu_usage_per_core: monitor_stats.cpu_usage_per_core,
             mem_used_mb: monitor_stats.mem_used_mb,
             mem_total_mb: monitor_stats.mem_total_mb,
             nvme_temp_c: if nvme_info.is_some() {
@@ -209,6 +215,7 @@ pub async fn run_stress_test(
             memory_errors: memory_errors.load(Ordering::Relaxed),
             nvme_errors: nvme_errors.load(Ordering::Relaxed),
             progress_percent: (elapsed.as_secs_f32() / config.duration.as_secs_f32()) * 100.0,
+            fan_status: monitor_stats.fan_status,
         };
 
         // Send stats (ignore errors if receiver dropped)
