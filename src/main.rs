@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use tokio::sync::mpsc;
 
 use pi_under_pressure::{
@@ -15,11 +15,16 @@ use pi_under_pressure::{
 #[derive(Parser, Debug)]
 #[command(name = "pi-under-pressure")]
 #[command(author = "Pi Under Pressure Contributors")]
-#[command(version, version = env!("CARGO_PKG_VERSION"))]
-#[command(disable_version_flag = true)]
+#[command(version)]
 #[command(about = "Stability tester for overclocked Raspberry Pi 5")]
 #[command(after_help = "NOTE: Run with sudo for full functionality (hardware sensors, NVMe stress testing).\n\nExample: sudo pi-under-pressure --duration 1h")]
+#[command(arg_required_else_help = true)]
+#[command(disable_version_flag = true)]
 struct Args {
+    /// Print version
+    #[arg(short = 'v', long = "version", action = ArgAction::Version)]
+    version: (),
+
     /// Test duration (e.g., 30m, 1h, 2h30m)
     #[arg(short, long, default_value = "30m")]
     duration: String,
@@ -67,10 +72,6 @@ struct Args {
     /// Output final report in JSON format
     #[arg(short = 'j', long)]
     json: bool,
-
-    /// Print version
-    #[arg(short = 'v', long = "version", action = clap::ArgAction::Version)]
-    version: (),
 }
 
 fn parse_duration(s: &str) -> Result<Duration, String> {
