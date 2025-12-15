@@ -408,6 +408,11 @@ pub fn display_final_report(report: &FinalReport, no_color: bool) {
     let io_color = if report.io_errors > 0 { red } else { green };
     println!("  I/O Errors:      {}{}{}", io_color, report.io_errors, reset);
 
+    // Show I/O error details if any
+    for error in &report.io_error_details {
+        println!("    {}→ {}{}", red, truncate_str(error, 70), reset);
+    }
+
     let smart_color = if report.smart_warnings > 0 { red } else { green };
     println!(
         "  SMART Warnings:  {}{}{}",

@@ -72,6 +72,7 @@ pub struct FinalReport {
     pub throttle_events: u32,
     pub under_voltage_events: u32,
     pub io_errors: u32,
+    pub io_error_details: Vec<String>,
     pub smart_warnings: u32,
 }
 
@@ -311,6 +312,7 @@ pub fn generate_report(
         throttle_events: result.throttle_events,
         under_voltage_events: result.under_voltage_events,
         io_errors: io_errors.len() as u32,
+        io_error_details: io_errors.to_vec(),
         smart_warnings: 0, // TODO: implement SMART checking
     }
 }
