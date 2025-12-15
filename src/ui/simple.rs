@@ -238,6 +238,13 @@ pub fn display_system_info(
                 cyan, temp, reset
             );
         }
+
+        // Show NVMe test file path
+        let test_path = crate::stress::nvme::get_test_file_path(nvme);
+        println!(
+            "{}│  NVMe Test File:     {}{}",
+            cyan, test_path.display(), reset
+        );
     }
 
     println!(

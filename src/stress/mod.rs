@@ -33,6 +33,7 @@ pub struct StressStats {
     pub mem_total_mb: u64,
     pub nvme_temp_c: Option<f32>,
     pub nvme_temp_max: Option<f32>,
+    pub nvme_test_path: Option<String>,
     pub io_errors: u32,
     pub cpu_errors: u64,
     pub memory_errors: u64,
@@ -123,6 +124,12 @@ pub async fn run_stress_test(
     };
 
     // Start NVMe stress if enabled and available
+    let nvme_test_path = if config.nvme && nvme_info.is_some() {
+        Some(nvme::get_test_file_path(nvme_info.as_ref().unwrap()).to_string_lossy().to_string())
+    } else {
+        None
+    };
+
     let nvme_handle = if config.nvme && nvme_info.is_some() {
         let running = running.clone();
         let errors = nvme_errors.clone();
@@ -210,6 +217,7 @@ pub async fn run_stress_test(
                 None
             },
             nvme_temp_max: max_nvme_temp,
+            nvme_test_path: nvme_test_path.clone(),
             io_errors: detection::errors::count_recent_io_errors(),
             cpu_errors: cpu_errors.load(Ordering::Relaxed),
             memory_errors: memory_errors.load(Ordering::Relaxed),

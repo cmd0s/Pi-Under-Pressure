@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use crate::detection::nvme::NvmeInfo;
 
-/// Test file size (256 MB)
-const TEST_FILE_SIZE: u64 = 256 * 1024 * 1024;
+/// Test file size (8 GB)
+const TEST_FILE_SIZE: u64 = 8 * 1024 * 1024 * 1024;
 
 /// Block size for 4K random I/O
 const BLOCK_SIZE_4K: usize = 4096;
@@ -62,8 +62,8 @@ pub async fn run_nvme_stress(
     let _ = std::fs::remove_file(&test_path);
 }
 
-/// Get path for test file on NVMe
-fn get_test_file_path(nvme_info: &NvmeInfo) -> PathBuf {
+/// Get path for test file on NVMe (public for UI display)
+pub fn get_test_file_path(nvme_info: &NvmeInfo) -> PathBuf {
     // Try to find mount point for NVMe
     if let Ok(mounts) = std::fs::read_to_string("/proc/mounts") {
         for line in mounts.lines() {

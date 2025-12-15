@@ -270,6 +270,12 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         (None, None) => "N/A".to_string(),
     };
 
+    // NVMe test path string
+    let nvme_test_path_str = match &stats.nvme_test_path {
+        Some(path) => path.clone(),
+        None => "N/A".to_string(),
+    };
+
     let mem_info = Paragraph::new(vec![
         Line::from(vec![
             Span::raw("  RAM Usage:        "),
@@ -289,6 +295,13 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             Span::raw("  NVMe Temperature: "),
             Span::styled(
                 nvme_temp_str,
+                Style::default().fg(Color::Cyan),
+            ),
+        ]),
+        Line::from(vec![
+            Span::raw("  NVMe Test File:   "),
+            Span::styled(
+                nvme_test_path_str,
                 Style::default().fg(Color::Cyan),
             ),
         ]),
