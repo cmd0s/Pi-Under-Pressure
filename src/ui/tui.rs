@@ -292,6 +292,13 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             ),
         ]),
         Line::from(vec![
+            Span::raw("  Video Errors:     "),
+            Span::styled(
+                format!("{}", stats.video_errors),
+                Style::default().fg(if stats.video_errors > 0 { Color::Red } else { Color::Green }),
+            ),
+        ]),
+        Line::from(vec![
             Span::raw("  NVMe Temperature: "),
             Span::styled(
                 nvme_temp_str,

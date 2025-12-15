@@ -39,6 +39,7 @@ pub struct StressStats {
     pub cpu_errors: u64,
     pub memory_errors: u64,
     pub nvme_errors: u64,
+    pub video_errors: u64,
     pub progress_percent: f32,
     pub fan_status: FanStatus,
 }
@@ -232,6 +233,7 @@ pub async fn run_stress_test(
             cpu_errors: cpu_errors.load(Ordering::Relaxed),
             memory_errors: memory_errors.load(Ordering::Relaxed),
             nvme_errors: nvme_errors.load(Ordering::Relaxed),
+            video_errors: video_errors.load(Ordering::Relaxed),
             progress_percent: (elapsed.as_secs_f32() / config.duration.as_secs_f32()) * 100.0,
             fan_status: monitor_stats.fan_status,
         };

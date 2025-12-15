@@ -378,6 +378,19 @@ pub fn display_final_report(report: &FinalReport, no_color: bool) {
             "I/O errors detected"
         }
     );
+    println!(
+        "  Video Stress:      {} {}",
+        if report.video_stress_passed {
+            format!("{}{}{}", green, check, reset)
+        } else {
+            format!("{}{}{}", red, cross, reset)
+        },
+        if report.video_stress_passed {
+            "No video errors"
+        } else {
+            "Video decode errors detected"
+        }
+    );
     println!();
 
     println!("Temperature Stats:");
