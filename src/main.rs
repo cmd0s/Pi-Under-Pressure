@@ -15,7 +15,8 @@ use pi_under_pressure::{
 #[derive(Parser, Debug)]
 #[command(name = "pi-under-pressure")]
 #[command(author = "Pi Under Pressure Contributors")]
-#[command(version)]
+#[command(version, version = env!("CARGO_PKG_VERSION"))]
+#[command(disable_version_flag = true)]
 #[command(about = "Stability tester for overclocked Raspberry Pi 5")]
 #[command(after_help = "NOTE: Run with sudo for full functionality (hardware sensors, NVMe stress testing).\n\nExample: sudo pi-under-pressure --duration 1h")]
 struct Args {
@@ -28,7 +29,7 @@ struct Args {
     extended: bool,
 
     /// Enable hardware video encoder stress
-    #[arg(long)]
+    #[arg(short = 'V', long)]
     video: bool,
 
     /// Test only CPU (skip RAM and NVMe)
@@ -44,7 +45,7 @@ struct Args {
     nvme_only: bool,
 
     /// Custom path for NVMe stress test file
-    #[arg(long)]
+    #[arg(short = 'p', long)]
     nvme_path: Option<String>,
 
     /// Number of CPU threads [default: all cores]
@@ -56,16 +57,20 @@ struct Args {
     interval: u64,
 
     /// Use simple output instead of TUI
-    #[arg(long)]
+    #[arg(short = 's', long)]
     simple: bool,
 
     /// Disable colors
-    #[arg(long)]
+    #[arg(short = 'N', long)]
     no_color: bool,
 
     /// Output final report in JSON format
-    #[arg(long)]
+    #[arg(short = 'j', long)]
     json: bool,
+
+    /// Print version
+    #[arg(short = 'v', long = "version", action = clap::ArgAction::Version)]
+    version: (),
 }
 
 fn parse_duration(s: &str) -> Result<Duration, String> {
