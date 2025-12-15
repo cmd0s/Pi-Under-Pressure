@@ -28,11 +28,11 @@ pub fn display_system_info(
 
     println!();
     println!(
-        "{}┌──────────────────────────────────────────────────────────────┐{}",
+        "{}┌──────────────────────────────────────────────────────────────{}",
         cyan, reset
     );
     println!(
-        "{}│  {}Pi Under Pressure{} v{:<40} │{}",
+        "{}│  {}Pi Under Pressure{} v{}{}",
         cyan,
         bold,
         reset,
@@ -40,139 +40,162 @@ pub fn display_system_info(
         reset
     );
     println!(
-        "{}├──────────────────────────────────────────────────────────────┤{}",
+        "{}├──────────────────────────────────────────────────────────────{}",
         cyan, reset
     );
 
     // System section
-    println!("{}│  {}SYSTEM{}                                                      │{}", cyan, bold, reset, reset);
+    println!("{}│  {}SYSTEM{}{}", cyan, bold, reset, reset);
     println!(
-        "{}│  Model:          {:<42} │{}",
+        "{}│  Model:          {}{}",
         cyan, sys_info.model, reset
     );
     println!(
-        "{}│  Serial:         {:<42} │{}",
+        "{}│  Serial:         {}{}",
         cyan, sys_info.serial, reset
     );
     println!(
-        "{}│  Firmware:       {:<42} │{}",
+        "{}│  Firmware:       {}{}",
         cyan,
-        truncate_str(&sys_info.firmware, 42),
+        truncate_str(&sys_info.firmware, 50),
         reset
     );
     println!(
-        "{}│  CPU:            {} ({} cores){:<27} │{}",
+        "{}│  CPU:            {} ({} cores){}",
         cyan,
         sys_info.cpu,
         sys_info.cpu_cores,
-        "",
         reset
     );
     println!(
-        "{}│  RAM:            {} MB{:<36} │{}",
-        cyan, sys_info.ram_mb, "", reset
+        "{}│  RAM:            {} MB{}",
+        cyan, sys_info.ram_mb, reset
     );
     println!(
-        "{}│  OS:             {:<42} │{}",
+        "{}│  OS:             {}{}",
         cyan,
-        truncate_str(&sys_info.os, 42),
+        truncate_str(&sys_info.os, 50),
         reset
     );
     println!(
-        "{}│  Kernel:         {:<42} │{}",
+        "{}│  Kernel:         {}{}",
         cyan, sys_info.kernel, reset
     );
 
     // Overclocking section
     println!(
-        "{}├──────────────────────────────────────────────────────────────┤{}",
+        "{}├──────────────────────────────────────────────────────────────{}",
         cyan, reset
     );
-    println!("{}│  {}OVERCLOCKING{} (/boot/firmware/config.txt)                    │{}", cyan, bold, reset, reset);
+    println!("{}│  {}OVERCLOCKING{} (/boot/firmware/config.txt){}", cyan, bold, reset, reset);
+
+    let mut has_oc_params = false;
 
     if let Some(freq) = oc_config.arm_freq {
+        has_oc_params = true;
         let default_note = if freq > 2400 {
             format!(" {}(default: 2400){}", dim, reset)
         } else {
             String::new()
         };
         println!(
-            "{}│  arm_freq:           {} MHz{:<28} │{}",
+            "{}│  arm_freq:           {} MHz{}{}",
             cyan, freq, default_note, reset
         );
     }
 
     if let Some(freq) = oc_config.gpu_freq {
+        has_oc_params = true;
         let default_note = if freq > 910 {
             format!(" {}(default: 910){}", dim, reset)
         } else {
             String::new()
         };
         println!(
-            "{}│  gpu_freq:           {} MHz{:<29} │{}",
+            "{}│  gpu_freq:           {} MHz{}{}",
             cyan, freq, default_note, reset
         );
     }
 
     if let Some(delta) = oc_config.over_voltage_delta {
+        has_oc_params = true;
         let mv = delta as f32 / 1000.0;
         println!(
-            "{}│  over_voltage_delta: {} µV (+{:.2}mV){:<18} │{}",
-            cyan, delta, mv, "", reset
+            "{}│  over_voltage_delta: {} µV (+{:.2}mV){}",
+            cyan, delta, mv, reset
         );
     }
 
     if let Some(ov) = oc_config.over_voltage {
+        has_oc_params = true;
         println!(
-            "{}│  over_voltage:       {:<38} │{}",
+            "{}│  over_voltage:       {}{}",
             cyan, ov, reset
         );
     }
 
     if let Some(ft) = oc_config.force_turbo {
+        has_oc_params = true;
         println!(
-            "{}│  force_turbo:        {:<38} │{}",
+            "{}│  force_turbo:        {}{}",
             cyan, ft, reset
         );
     }
 
     if let Some(gen) = oc_config.pcie_gen {
+        has_oc_params = true;
         println!(
-            "{}│  dtparam=pciex1_gen: {:<38} │{}",
+            "{}│  dtparam=pciex1_gen: {}{}",
             cyan, gen, reset
+        );
+    }
+
+    if !has_oc_params {
+        println!("{}│  {}(no overclocking parameters set){}",
+            cyan, dim, reset
         );
     }
 
     // Runtime section
     println!(
-        "{}├──────────────────────────────────────────────────────────────┤{}",
+        "{}├──────────────────────────────────────────────────────────────{}",
         cyan, reset
     );
-    println!("{}│  {}RUNTIME{}                                                     │{}", cyan, bold, reset, reset);
+    println!("{}│  {}RUNTIME{}{}", cyan, bold, reset, reset);
 
-    let current_freq = crate::system::monitor::get_cpu_freq();
+    let min_freq = crate::system::monitor::get_cpu_freq_min();
+    let cur_freq = crate::system::monitor::get_cpu_freq();
+    let max_freq = crate::system::monitor::get_cpu_freq_max();
     println!(
-        "{}│  Current CPU freq:   {} MHz{:<32} │{}",
-        cyan, current_freq, "", reset
+        "{}│  Min CPU freq:       {} MHz{}",
+        cyan, min_freq, reset
+    );
+    println!(
+        "{}│  Cur CPU freq:       {} MHz{}",
+        cyan, cur_freq, reset
+    );
+    println!(
+        "{}│  Max CPU freq:       {} MHz{}",
+        cyan, max_freq, reset
     );
 
     let governor = crate::system::monitor::get_governor();
     println!(
-        "{}│  CPU Governor:       {:<38} │{}",
+        "{}│  CPU Governor:       {}{}",
         cyan, governor, reset
     );
 
     // Storage section
     if let Some(nvme) = nvme_info {
         println!(
-            "{}├──────────────────────────────────────────────────────────────┤{}",
+            "{}├──────────────────────────────────────────────────────────────{}",
             cyan, reset
         );
-        println!("{}│  {}STORAGE{}                                                     │{}", cyan, bold, reset, reset);
+        println!("{}│  {}STORAGE{}{}", cyan, bold, reset, reset);
         println!(
-            "{}│  NVMe Detected:      {:<38} │{}",
+            "{}│  NVMe Detected:      {}{}",
             cyan,
-            truncate_str(&nvme.model, 38),
+            truncate_str(&nvme.model, 45),
             reset
         );
 
@@ -183,21 +206,21 @@ pub fn display_system_info(
                 _ => "~250 MB/s",
             };
             println!(
-                "{}│  PCIe Generation:    Gen {}.0 x1 ({}){:<18} │{}",
-                cyan, gen, speed, "", reset
+                "{}│  PCIe Generation:    Gen {}.0 x1 ({}){}",
+                cyan, gen, speed, reset
             );
         }
 
         if let Some(temp) = crate::detection::nvme::get_nvme_temp(&nvme.device_path) {
             println!(
-                "{}│  NVMe Temperature:   {:.1}°C{:<36} │{}",
-                cyan, temp, "", reset
+                "{}│  NVMe Temperature:   {:.1}°C{}",
+                cyan, temp, reset
             );
         }
     }
 
     println!(
-        "{}└──────────────────────────────────────────────────────────────┘{}",
+        "{}└──────────────────────────────────────────────────────────────{}",
         cyan, reset
     );
     println!();

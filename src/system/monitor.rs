@@ -130,6 +130,30 @@ pub fn get_cpu_freq() -> u32 {
     0
 }
 
+/// Get minimum CPU frequency from sysfs (in MHz)
+pub fn get_cpu_freq_min() -> u32 {
+    if let Ok(freq_str) = fs::read_to_string(
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq",
+    ) {
+        if let Ok(freq_khz) = freq_str.trim().parse::<u32>() {
+            return freq_khz / 1000;
+        }
+    }
+    0
+}
+
+/// Get maximum CPU frequency from sysfs (in MHz)
+pub fn get_cpu_freq_max() -> u32 {
+    if let Ok(freq_str) = fs::read_to_string(
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
+    ) {
+        if let Ok(freq_khz) = freq_str.trim().parse::<u32>() {
+            return freq_khz / 1000;
+        }
+    }
+    0
+}
+
 /// Get current GPU frequency using vcgencmd
 pub fn get_gpu_freq() -> u32 {
     if let Ok(output) = Command::new("vcgencmd")
