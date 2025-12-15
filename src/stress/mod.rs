@@ -110,13 +110,13 @@ pub async fn run_stress_test(
     };
 
     // Start memory stress threads
-    // Calculate memory allocation: use 70% of available RAM, divided among threads
+    // Calculate memory allocation: use 50% of available RAM, divided among threads
     let mem_handles: Vec<_> = if config.memory {
         let available_mb = monitor::get_available_memory_mb();
         let num_mem_threads = 2.min(config.threads);
-        // Use 70% of AVAILABLE memory (not total), divided by number of threads
-        // Leave 30% for OS, app overhead, and safety margin
-        let allocation_per_thread = (available_mb as usize * 1024 * 1024 * 7 / 10) / num_mem_threads;
+        // Use 50% of AVAILABLE memory (not total), divided by number of threads
+        // Leave 50% for OS, app overhead, NVMe test file cache, and safety margin
+        let allocation_per_thread = (available_mb as usize * 1024 * 1024 / 2) / num_mem_threads;
 
         (0..num_mem_threads)
             .map(|_| {
