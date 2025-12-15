@@ -65,13 +65,14 @@ pub async fn run_nvme_stress(
 
 /// Get path for test file on NVMe (public for UI display)
 /// custom_path: User-specified path via --nvme-path flag
-pub fn get_test_file_path(nvme_info: &NvmeInfo, custom_path: Option<&str>) -> PathBuf {
+pub fn get_test_file_path(_nvme_info: &NvmeInfo, custom_path: Option<&str>) -> PathBuf {
     // 1. If user specified custom path, use it
     if let Some(path) = custom_path {
         return PathBuf::from(path);
     }
 
-    // 2. Check if root "/" is on NVMe - if so, use /tmp
+    // 2. Check if root "/" is on NVMe - if so, use user's home or /var/tmp
+    //    (NOT /tmp which is often tmpfs in RAM!)
     if let Ok(mounts) = std::fs::read_to_string("/proc/mounts") {
         for line in mounts.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
@@ -79,9 +80,20 @@ pub fn get_test_file_path(nvme_info: &NvmeInfo, custom_path: Option<&str>) -> Pa
                 let device = parts[0];
                 let mount_point = parts[1];
 
-                // Root is on NVMe? Use /tmp (which is on NVMe too)
+                // Root is on NVMe? Use home dir or /var/tmp (both on NVMe)
                 if mount_point == "/" && device.contains("nvme") {
-                    return PathBuf::from("/tmp/.pi-under-pressure-nvme-test");
+                    // Try user's cache directory first
+                    if let Some(home) = std::env::var_os("HOME") {
+                        let mut cache_path = PathBuf::from(home);
+                        cache_path.push(".cache");
+                        cache_path.push("pi-under-pressure");
+                        // Create cache dir if needed
+                        let _ = std::fs::create_dir_all(&cache_path);
+                        cache_path.push("nvme-test");
+                        return cache_path;
+                    }
+                    // Fallback to /var/tmp (persistent, on root fs)
+                    return PathBuf::from("/var/tmp/.pi-under-pressure-nvme-test");
                 }
             }
         }
@@ -110,8 +122,8 @@ pub fn get_test_file_path(nvme_info: &NvmeInfo, custom_path: Option<&str>) -> Pa
         }
     }
 
-    // 4. Fallback to /tmp
-    PathBuf::from("/tmp/.pi-under-pressure-nvme-test")
+    // 4. Fallback to /var/tmp (NOT /tmp which may be tmpfs)
+    PathBuf::from("/var/tmp/.pi-under-pressure-nvme-test")
 }
 
 /// Create test file filled with random data
