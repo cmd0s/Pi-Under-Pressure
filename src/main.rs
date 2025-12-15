@@ -43,6 +43,10 @@ struct Args {
     #[arg(short = 'n', long)]
     nvme_only: bool,
 
+    /// Custom path for NVMe stress test file
+    #[arg(long)]
+    nvme_path: Option<String>,
+
     /// Number of CPU threads [default: all cores]
     #[arg(short, long)]
     threads: Option<usize>,
@@ -106,6 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         video: args.video,
         threads: args.threads.unwrap_or_else(num_cpus),
         duration,
+        nvme_path: args.nvme_path,
     };
 
     // Create channels for communication

@@ -21,9 +21,10 @@ pub async fn run_nvme_stress(
     running: Arc<AtomicBool>,
     errors: Arc<AtomicU64>,
     nvme_info: NvmeInfo,
+    custom_path: Option<String>,
 ) {
     // Determine test file path - use a temp file on the NVMe
-    let test_path = get_test_file_path(&nvme_info);
+    let test_path = get_test_file_path(&nvme_info, custom_path.as_deref());
 
     // Create test file if needed
     if let Err(e) = create_test_file(&test_path) {
@@ -63,8 +64,14 @@ pub async fn run_nvme_stress(
 }
 
 /// Get path for test file on NVMe (public for UI display)
-pub fn get_test_file_path(nvme_info: &NvmeInfo) -> PathBuf {
-    // Try to find mount point for NVMe
+/// custom_path: User-specified path via --nvme-path flag
+pub fn get_test_file_path(nvme_info: &NvmeInfo, custom_path: Option<&str>) -> PathBuf {
+    // 1. If user specified custom path, use it
+    if let Some(path) = custom_path {
+        return PathBuf::from(path);
+    }
+
+    // 2. Check if root "/" is on NVMe - if so, use /tmp
     if let Ok(mounts) = std::fs::read_to_string("/proc/mounts") {
         for line in mounts.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
@@ -72,20 +79,38 @@ pub fn get_test_file_path(nvme_info: &NvmeInfo) -> PathBuf {
                 let device = parts[0];
                 let mount_point = parts[1];
 
-                // Check if this is our NVMe device
-                if device.contains("nvme") || device.starts_with(&nvme_info.device_path) {
-                    // Don't use root filesystem for stress test
-                    if mount_point != "/" {
-                        let mut path = PathBuf::from(mount_point);
-                        path.push(".pi-under-pressure-test");
-                        return path;
+                // Root is on NVMe? Use /tmp (which is on NVMe too)
+                if mount_point == "/" && device.contains("nvme") {
+                    return PathBuf::from("/tmp/.pi-under-pressure-nvme-test");
+                }
+            }
+        }
+
+        // 3. Look for non-boot NVMe mount with enough space
+        for line in mounts.lines() {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                let device = parts[0];
+                let mount_point = parts[1];
+
+                if device.contains("nvme") {
+                    // Skip root and boot partitions
+                    if mount_point == "/"
+                        || mount_point == "/boot"
+                        || mount_point == "/boot/firmware"
+                    {
+                        continue;
                     }
+                    // Found a separate NVMe data partition
+                    let mut path = PathBuf::from(mount_point);
+                    path.push(".pi-under-pressure-test");
+                    return path;
                 }
             }
         }
     }
 
-    // Fallback to /tmp (which might be on NVMe if root is on NVMe)
+    // 4. Fallback to /tmp
     PathBuf::from("/tmp/.pi-under-pressure-nvme-test")
 }
 
@@ -262,7 +287,12 @@ mod tests {
             model: "Test".to_string(),
             pcie_gen: Some(3),
         };
-        let path = get_test_file_path(&nvme);
+        // Test with auto-detection (None)
+        let path = get_test_file_path(&nvme, None);
         assert!(path.to_string_lossy().contains("pi-under-pressure"));
+
+        // Test with custom path
+        let custom_path = get_test_file_path(&nvme, Some("/custom/path/test"));
+        assert_eq!(custom_path.to_string_lossy(), "/custom/path/test");
     }
 }

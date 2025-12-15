@@ -239,8 +239,8 @@ pub fn display_system_info(
             );
         }
 
-        // Show NVMe test file path
-        let test_path = crate::stress::nvme::get_test_file_path(nvme);
+        // Show NVMe test file path (auto-detected, user can override with --nvme-path)
+        let test_path = crate::stress::nvme::get_test_file_path(nvme, None);
         println!(
             "{}│  NVMe Test File:     {}{}",
             cyan, test_path.display(), reset

@@ -19,6 +19,7 @@ pub struct StressConfig {
     pub video: bool,
     pub threads: usize,
     pub duration: Duration,
+    pub nvme_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -131,7 +132,7 @@ pub async fn run_stress_test(
 
     // Start NVMe stress if enabled and available
     let nvme_test_path = if config.nvme && nvme_info.is_some() {
-        Some(nvme::get_test_file_path(nvme_info.as_ref().unwrap()).to_string_lossy().to_string())
+        Some(nvme::get_test_file_path(nvme_info.as_ref().unwrap(), config.nvme_path.as_deref()).to_string_lossy().to_string())
     } else {
         None
     };
@@ -140,8 +141,9 @@ pub async fn run_stress_test(
         let running = running.clone();
         let errors = nvme_errors.clone();
         let nvme = nvme_info.clone().unwrap();
+        let custom_path = config.nvme_path.clone();
         Some(tokio::spawn(async move {
-            nvme::run_nvme_stress(running, errors, nvme).await;
+            nvme::run_nvme_stress(running, errors, nvme, custom_path).await;
         }))
     } else {
         None
