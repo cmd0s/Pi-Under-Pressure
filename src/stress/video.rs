@@ -1,7 +1,6 @@
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
 
 /// Run video encoder stress test using hardware acceleration
 /// This requires ffmpeg with v4l2 support and a test video
@@ -78,6 +77,8 @@ fn create_test_video(path: &str) -> std::io::Result<()> {
             "rawvideo",
             path,
         ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status()?;
 
     if status.success() {
