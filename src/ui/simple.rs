@@ -117,6 +117,19 @@ pub fn display_system_info(
         );
     }
 
+    if let Some(freq) = oc_config.core_freq {
+        has_oc_params = true;
+        let default_note = if freq > 910 {
+            format!(" {}(default: 910){}", dim, reset)
+        } else {
+            String::new()
+        };
+        println!(
+            "{}│  core_freq:          {} MHz{}{}",
+            cyan, freq, default_note, reset
+        );
+    }
+
     if let Some(delta) = oc_config.over_voltage_delta {
         has_oc_params = true;
         let mv = delta as f32 / 1000.0;
@@ -139,6 +152,14 @@ pub fn display_system_info(
         println!(
             "{}│  force_turbo:        {}{}",
             cyan, ft, reset
+        );
+    }
+
+    if let Some(cff) = oc_config.core_freq_fixed {
+        has_oc_params = true;
+        println!(
+            "{}│  core_freq_fixed:    {}{}",
+            cyan, cff, reset
         );
     }
 

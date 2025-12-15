@@ -9,8 +9,10 @@ const CONFIG_PATH_ALT: &str = "/boot/config.txt";
 pub struct OcConfig {
     /// CPU frequency in MHz (default: 2400)
     pub arm_freq: Option<u32>,
-    /// GPU frequency in MHz (default: 910)
+    /// GPU/Core frequency in MHz (default: 910)
     pub gpu_freq: Option<u32>,
+    /// Core frequency in MHz (alias for gpu_freq on Pi5)
+    pub core_freq: Option<u32>,
     /// Legacy voltage setting (0-8)
     pub over_voltage: Option<i32>,
     /// Voltage delta in µV (preferred for Pi5)
@@ -61,8 +63,8 @@ pub fn parse_config() -> OcConfig {
     for line in content.lines() {
         let line = line.trim();
 
-        // Skip comments and empty lines
-        if line.is_empty() || line.starts_with('#') {
+        // Skip comments, empty lines, and section headers like [all], [pi5], etc.
+        if line.is_empty() || line.starts_with('#') || line.starts_with('[') {
             continue;
         }
 
@@ -98,6 +100,11 @@ pub fn parse_config() -> OcConfig {
                 "gpu_freq" => {
                     if let Ok(freq) = value.parse::<u32>() {
                         config.gpu_freq = Some(freq);
+                    }
+                }
+                "core_freq" => {
+                    if let Ok(freq) = value.parse::<u32>() {
+                        config.core_freq = Some(freq);
                     }
                 }
                 "over_voltage" => {
