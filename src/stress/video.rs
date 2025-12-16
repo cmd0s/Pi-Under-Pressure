@@ -45,8 +45,11 @@ pub fn run_video_stress_with_encoder(
 fn is_ffmpeg_available() -> bool {
     Command::new("ffmpeg")
         .arg("-version")
-        .output()
-        .map(|o| o.status.success())
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
         .unwrap_or(false)
 }
 
@@ -67,6 +70,7 @@ fn create_test_video(path: &str) -> std::io::Result<()> {
             "rawvideo",
             path,
         ])
+        .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()?;
@@ -95,6 +99,7 @@ fn run_encode_cycle(input_path: &str, encoder: &str) -> bool {
             "-f", "null",
             "-", // Discard output
         ])
+        .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
@@ -104,7 +109,13 @@ fn run_encode_cycle(input_path: &str, encoder: &str) -> bool {
 
 /// Check if a specific encoder is available (just checks listing)
 fn check_encoder_available(encoder: &str) -> bool {
-    if let Ok(output) = Command::new("ffmpeg").args(["-encoders"]).output() {
+    let result = Command::new("ffmpeg")
+        .args(["-encoders"])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output();
+
+    if let Ok(output) = result {
         let stdout = String::from_utf8_lossy(&output.stdout);
         return stdout.contains(encoder);
     }
@@ -123,6 +134,7 @@ fn test_encoder_works(encoder: &str) -> bool {
             "-c:v", encoder,
             "-f", "null", "-",
         ])
+        .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
