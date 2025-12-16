@@ -4,6 +4,10 @@
 
 Pi Under Pressure is a comprehensive stress testing tool designed specifically for Raspberry Pi 5 after overclocking. It tests CPU, RAM, and NVMe stability simultaneously while monitoring temperature, throttling, and system errors.
 
+## Screenshoot
+
+<img width="1760" height="764" alt="image" src="https://github.com/user-attachments/assets/2924dd97-a644-4716-99ae-d7c23c46ccc6" />
+
 ## Features
 
 - **CPU Stress Testing**: FFT, matrix multiplication, prime sieve, and AES-256 workloads
