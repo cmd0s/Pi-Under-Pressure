@@ -9,7 +9,7 @@ Pi Under Pressure is a comprehensive stress testing tool designed specifically f
 - **CPU Stress Testing**: FFT, matrix multiplication, prime sieve, and AES-256 workloads
 - **Memory Stress Testing**: Random access, sequential patterns, and STREAM-like bandwidth tests
 - **NVMe Stress Testing**: 4K random I/O and sequential bandwidth tests (auto-detected)
-- **Video Encoder Stress**: Optional hardware H.265 encoder stress via V4L2 (`--video`)
+- **Video Encoder Stress**: Optional hardware H.265 encoder stress via V4L2 (`-V`, requires `ffmpeg`)
 - **Real-time Monitoring**: Temperature, frequency, throttling status, and errors
 - **Fancy TUI**: Interactive terminal UI with progress bars and gauges
 - **Error Detection**: Monitors dmesg/journalctl for I/O errors and kernel issues
@@ -56,17 +56,18 @@ cargo build --release
 
 ### Basic Usage
 
-**Note:** Root privileges (sudo) are required for full functionality.
-
 ```bash
-# Run 30-minute stability test (default)
-sudo pi-under-pressure
+# Run 30-minute stability test
+pi-under-pressure -d 30m
 
 # Run 1-hour test
-sudo pi-under-pressure --duration 1h
+pi-under-pressure --duration 1h
 
-# Run 2-hour test with video encoder stress
-sudo pi-under-pressure --duration 2h --video
+# Run 1-hour test with NVMe stress
+pi-under-pressure -d 1h -e
+
+# Run 2-hour test with video encoder stress (requires ffmpeg)
+pi-under-pressure --duration 2h -V
 ```
 
 ### Options
@@ -75,17 +76,18 @@ sudo pi-under-pressure --duration 2h --video
 OPTIONS:
     -d, --duration <TIME>     Test duration (e.g., 30m, 1h, 2h30m) [default: 30m]
     -e, --extended            Force extended mode (include NVMe stress)
-    --video                   Enable hardware video encoder stress
+    -V, --video               Enable hardware video encoder stress (requires ffmpeg)
     -c, --cpu-only            Test only CPU (skip RAM and NVMe)
     -m, --memory-only         Test only RAM
     -n, --nvme-only           Test only NVMe
+    -p, --nvme-path <PATH>    Custom path for NVMe stress test file
     -t, --threads <N>         Number of CPU threads [default: all cores]
     -i, --interval <SEC>      Status update interval [default: 2]
-    --simple                  Use simple output instead of TUI
-    --no-color                Disable colors
-    --json                    Output final report in JSON format
+    -s, --simple              Use simple output instead of TUI
+    -N, --no-color            Disable colors
+    -j, --json                Output final report in JSON format
     -h, --help                Print help
-    -V, --version             Print version
+    -v, --version             Print version
 
 CONTROLS:
     Ctrl+C or 'q'             Stop test gracefully
@@ -150,47 +152,36 @@ Events:
 ===================================================================
 ```
 
-## Recommended Overclocking Settings
-
-### Conservative (Passive Cooling)
-
-```ini
-# /boot/firmware/config.txt
-arm_freq=2600
-gpu_freq=900
-over_voltage_delta=25000
-```
-
-### Moderate (Active Cooling Required)
-
-```ini
-arm_freq=2800
-gpu_freq=1000
-over_voltage_delta=50000
-```
-
-### Aggressive (High-RPM Fan + Good Silicon)
-
-```ini
-arm_freq=3000
-gpu_freq=1100
-over_voltage_delta=75000
-force_turbo=1
-```
-
 ## Requirements
 
 - Raspberry Pi 5 (other models may work but are not officially supported)
-- Raspberry Pi OS (Bookworm) or compatible Linux distribution
-- **Root privileges (sudo)** - required for accessing hardware sensors and NVMe stress testing
-- `vcgencmd` for temperature/throttling monitoring (usually pre-installed)
-- Optional: `smartctl` for NVMe SMART data
-- Optional: `ffmpeg` for video encoder stress testing
+- Raspberry Pi OS, Ubuntu, DietPi, Armbian or compatible Linux distribution
 
-**Note:** Run with `sudo` for full functionality:
+### Pre-installed Dependencies
+
+These tools are typically pre-installed on Raspberry Pi OS:
+
+- `vcgencmd` - temperature/throttling monitoring (from `libraspberrypi-bin`)
+- `dmesg`, `journalctl` - kernel log monitoring
+- `lspci` - PCIe device detection
+
+### Optional Dependencies
+
+Install these for additional functionality:
+
 ```bash
-sudo pi-under-pressure --duration 30m
+# Video encoder stress testing (--video flag)
+sudo apt install ffmpeg
+
+# NVMe SMART data and detailed info
+sudo apt install smartmontools nvme-cli
 ```
+
+| Package | Provides | Used for |
+|---------|----------|----------|
+| `ffmpeg` | `ffmpeg` | Video encoder stress (`--video` flag) |
+| `smartmontools` | `smartctl` | NVMe SMART data (temperature, wear) |
+| `nvme-cli` | `nvme` | Detailed NVMe device info |
 
 ## License
 
@@ -205,3 +196,7 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 - Raspberry Pi Foundation for the excellent hardware
 - The Rust community for amazing tools and libraries
 - stress-ng and fio for inspiration on stress testing approaches
+
+## Disclaimer
+
+Raspberry Pi is a trademark of Raspberry Pi Ltd. This software and its author are not affiliated with, endorsed by, or connected to Raspberry Pi Ltd in any way. The use of this trademark is solely for descriptive purposes.
