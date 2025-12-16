@@ -122,7 +122,7 @@ fn render_ui(frame: &mut Frame, stats: &StressStats, total_secs: u64) {
             Constraint::Length(3),           // Title
             Constraint::Length(stats_height), // Stats (dynamic based on cores)
             Constraint::Length(5),           // Progress
-            Constraint::Length(3),           // Footer
+            Constraint::Length(4),           // Footer (with GitHub link)
         ])
         .split(size);
 
@@ -285,6 +285,13 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             ),
         ]),
         Line::from(vec![
+            Span::raw("  Fan Speed:        "),
+            Span::styled(
+                fan_str,
+                Style::default().fg(Color::Cyan),
+            ),
+        ]),
+        Line::from(vec![
             Span::raw("  Memory Errors:    "),
             Span::styled(
                 format!("{}", stats.memory_errors),
@@ -292,10 +299,10 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             ),
         ]),
         Line::from(vec![
-            Span::raw("  Video Errors:     "),
+            Span::raw("  I/O Errors:       "),
             Span::styled(
-                format!("{}", stats.video_errors),
-                Style::default().fg(if stats.video_errors > 0 { Color::Red } else { Color::Green }),
+                format!("{}", stats.io_errors),
+                Style::default().fg(if stats.io_errors > 0 { Color::Red } else { Color::Green }),
             ),
         ]),
         Line::from(vec![
@@ -313,17 +320,10 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             ),
         ]),
         Line::from(vec![
-            Span::raw("  I/O Errors:       "),
+            Span::raw("  Video Errors:     "),
             Span::styled(
-                format!("{}", stats.io_errors),
-                Style::default().fg(if stats.io_errors > 0 { Color::Red } else { Color::Green }),
-            ),
-        ]),
-        Line::from(vec![
-            Span::raw("  Fan Speed:        "),
-            Span::styled(
-                fan_str,
-                Style::default().fg(Color::Cyan),
+                format!("{}", stats.video_errors),
+                Style::default().fg(if stats.video_errors > 0 { Color::Red } else { Color::Green }),
             ),
         ]),
     ])
@@ -393,12 +393,24 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
 }
 
 fn render_footer(frame: &mut Frame, area: Rect) {
-    let footer = Paragraph::new(Line::from(vec![
-        Span::styled(
-            " Press 'q' or Ctrl+C to stop test gracefully ",
-            Style::default().fg(Color::DarkGray),
-        ),
-    ]))
+    let footer = Paragraph::new(vec![
+        Line::from(vec![
+            Span::styled(
+                " GitHub: ",
+                Style::default().fg(Color::DarkGray),
+            ),
+            Span::styled(
+                "https://github.com/cmd0s/Pi-Under-Pressure",
+                Style::default().fg(Color::Blue),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                " Press 'q' or Ctrl+C to stop test gracefully ",
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]),
+    ])
     .block(
         Block::default()
             .borders(Borders::ALL)
