@@ -1,5 +1,5 @@
 use std::process::Command;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 /// Error patterns to look for in dmesg/journalctl (broad - for general diagnostics)
 const ERROR_PATTERNS: &[&str] = &[
@@ -122,7 +122,6 @@ pub fn count_recent_io_errors() -> u32 {
     {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
-            let now = SystemTime::now();
 
             for line in stdout.lines() {
                 // Check if line contains I/O related error
