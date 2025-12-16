@@ -252,8 +252,8 @@ fn parse_smart_value(line: &str) -> Option<u64> {
         let value_part = &line[colon_pos + 1..];
         for word in value_part.split_whitespace() {
             // Handle hex values
-            if word.starts_with("0x") {
-                if let Ok(v) = u64::from_str_radix(&word[2..], 16) {
+            if let Some(hex) = word.strip_prefix("0x") {
+                if let Ok(v) = u64::from_str_radix(hex, 16) {
                     return Some(v);
                 }
             }

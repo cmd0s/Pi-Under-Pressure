@@ -78,10 +78,7 @@ fn create_test_video(path: &str) -> std::io::Result<()> {
     if status.success() {
         Ok(())
     } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Failed to generate test video",
-        ))
+        Err(std::io::Error::other("Failed to generate test video"))
     }
 }
 

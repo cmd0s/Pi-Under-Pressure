@@ -12,7 +12,6 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    symbols,
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
     Frame, Terminal,
@@ -46,7 +45,7 @@ pub async fn run_tui(
     mut stats_rx: mpsc::Receiver<StressStats>,
     running: Arc<AtomicBool>,
     total_duration: Duration,
-    update_interval: u64,
+    _update_interval: u64,
 ) {
     // Initialize terminal
     let mut terminal = match init_terminal() {
@@ -347,7 +346,7 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
         .split(area);
 
     // Progress bar
-    let progress = stats.progress_percent.min(100.0) / 100.0;
+    let _progress = stats.progress_percent.min(100.0) / 100.0;
     let remaining_secs = total_secs.saturating_sub(stats.elapsed_secs);
     let remaining_str = format_duration(remaining_secs);
 

@@ -182,13 +182,12 @@ pub fn get_pcie_aer_errors() -> Vec<String> {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
-                if line.contains("AER") || line.contains("pcieport") {
-                    if line.to_lowercase().contains("error")
+                if (line.contains("AER") || line.contains("pcieport"))
+                    && (line.to_lowercase().contains("error")
                         || line.contains("Correctable")
-                        || line.contains("Uncorrectable")
-                    {
-                        errors.push(line.to_string());
-                    }
+                        || line.contains("Uncorrectable"))
+                {
+                    errors.push(line.to_string());
                 }
             }
         }
@@ -215,10 +214,7 @@ pub fn watch_for_errors(timeout: Duration) -> Option<String> {
         Err(_) => return None,
     };
 
-    let stdout = match child.stdout.take() {
-        Some(s) => s,
-        None => return None,
-    };
+    let stdout = child.stdout.take()?;
 
     let reader = BufReader::new(stdout);
 

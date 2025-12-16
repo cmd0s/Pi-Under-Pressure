@@ -4,7 +4,7 @@ pub mod nvme;
 pub mod video;
 
 use crate::detection::{self, nvme::NvmeInfo};
-use crate::system::monitor::{self, CpuStatSnapshot, FanStatus, MonitorStats, ThrottleStatus};
+use crate::system::monitor::{self, CpuStatSnapshot, FanStatus, ThrottleStatus};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -136,20 +136,20 @@ pub async fn run_stress_test(
     };
 
     // Start NVMe stress if enabled and available
-    let nvme_test_path = if config.nvme && nvme_info.is_some() {
-        Some(
-            nvme::get_test_file_path(nvme_info.as_ref().unwrap(), config.nvme_path.as_deref())
+    let nvme_test_path = if config.nvme {
+        nvme_info.as_ref().map(|nvme| {
+            nvme::get_test_file_path(nvme, config.nvme_path.as_deref())
                 .to_string_lossy()
-                .to_string(),
-        )
+                .to_string()
+        })
     } else {
         None
     };
 
-    let nvme_handle = if config.nvme && nvme_info.is_some() {
+    let nvme_handle = if let Some(nvme) = nvme_info.as_ref().filter(|_| config.nvme) {
         let running = running.clone();
         let errors = nvme_errors.clone();
-        let nvme = nvme_info.clone().unwrap();
+        let nvme = nvme.clone();
         let custom_path = config.nvme_path.clone();
         Some(tokio::spawn(async move {
             nvme::run_nvme_stress(running, errors, nvme, custom_path).await;
@@ -231,11 +231,9 @@ pub async fn run_stress_test(
             cpu_usage_per_core: monitor_stats.cpu_usage_per_core,
             mem_used_mb: monitor_stats.mem_used_mb,
             mem_total_mb: monitor_stats.mem_total_mb,
-            nvme_temp_c: if nvme_info.is_some() {
-                detection::nvme::get_nvme_temp(&nvme_info.as_ref().unwrap().device_path)
-            } else {
-                None
-            },
+            nvme_temp_c: nvme_info
+                .as_ref()
+                .and_then(|n| detection::nvme::get_nvme_temp(&n.device_path)),
             nvme_temp_max: max_nvme_temp,
             nvme_test_path: nvme_test_path.clone(),
             io_errors: detection::errors::count_recent_io_errors(),

@@ -175,24 +175,24 @@ fn run_random_4k_stress(path: &PathBuf, running: &Arc<AtomicBool>) -> bool {
         let offset = rng.gen_range(0..max_offset);
         let is_read = rng.gen_bool(0.5);
 
-        if let Err(_) = file.seek(SeekFrom::Start(offset)) {
+        if file.seek(SeekFrom::Start(offset)).is_err() {
             return false;
         }
 
         if is_read {
-            if let Err(_) = file.read_exact(&mut buffer) {
+            if file.read_exact(&mut buffer).is_err() {
                 return false;
             }
         } else {
             rng.fill(&mut buffer[..]);
-            if let Err(_) = file.write_all(&buffer) {
+            if file.write_all(&buffer).is_err() {
                 return false;
             }
         }
     }
 
     // Sync to ensure writes are committed
-    if let Err(_) = file.sync_all() {
+    if file.sync_all().is_err() {
         return false;
     }
 
@@ -210,31 +210,31 @@ fn run_sequential_stress(path: &PathBuf, running: &Arc<AtomicBool>) -> bool {
     let mut buffer = vec![0u8; BLOCK_SIZE_SEQ];
 
     // Sequential write
-    if let Err(_) = file.seek(SeekFrom::Start(0)) {
+    if file.seek(SeekFrom::Start(0)).is_err() {
         return false;
     }
 
     let mut written = 0u64;
     while written < TEST_FILE_SIZE && running.load(Ordering::Relaxed) {
         rng.fill(&mut buffer[..]);
-        if let Err(_) = file.write_all(&buffer) {
+        if file.write_all(&buffer).is_err() {
             return false;
         }
         written += buffer.len() as u64;
     }
 
-    if let Err(_) = file.sync_all() {
+    if file.sync_all().is_err() {
         return false;
     }
 
     // Sequential read
-    if let Err(_) = file.seek(SeekFrom::Start(0)) {
+    if file.seek(SeekFrom::Start(0)).is_err() {
         return false;
     }
 
     let mut read = 0u64;
     while read < TEST_FILE_SIZE && running.load(Ordering::Relaxed) {
-        if let Err(_) = file.read_exact(&mut buffer) {
+        if file.read_exact(&mut buffer).is_err() {
             return false;
         }
         read += buffer.len() as u64;
@@ -263,23 +263,23 @@ fn run_mixed_stress(path: &PathBuf, running: &Arc<AtomicBool>) -> bool {
         let offset = rng.gen_range(0..max_offset);
         let is_read = rng.gen_bool(0.7); // 70% reads
 
-        if let Err(_) = file.seek(SeekFrom::Start(offset)) {
+        if file.seek(SeekFrom::Start(offset)).is_err() {
             return false;
         }
 
         if is_read {
-            if let Err(_) = file.read_exact(&mut buffer) {
+            if file.read_exact(&mut buffer).is_err() {
                 return false;
             }
         } else {
             rng.fill(&mut buffer[..]);
-            if let Err(_) = file.write_all(&buffer) {
+            if file.write_all(&buffer).is_err() {
                 return false;
             }
         }
     }
 
-    if let Err(_) = file.sync_all() {
+    if file.sync_all().is_err() {
         return false;
     }
 
@@ -289,8 +289,6 @@ fn run_mixed_stress(path: &PathBuf, running: &Arc<AtomicBool>) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::AtomicBool;
-    use std::sync::Arc;
 
     #[test]
     fn test_get_test_file_path() {
