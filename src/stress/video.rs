@@ -1,6 +1,8 @@
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 
 /// Run video encoder stress test using hardware acceleration
 /// This requires ffmpeg with v4l2 support and a test video
@@ -11,11 +13,14 @@ pub fn run_video_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>) {
         return;
     }
 
-    // Check if V4L2 encoder is available
-    if !is_v4l2_encoder_available() {
-        eprintln!("Warning: V4L2 H.265 encoder not available, skipping video stress test");
-        return;
-    }
+    // Find a working encoder (actually test it, don't just check listing)
+    let encoder = match find_working_encoder() {
+        Some(enc) => enc,
+        None => {
+            eprintln!("Warning: No working video encoder found, skipping video stress test");
+            return;
+        }
+    };
 
     // Create test input if needed
     let test_input = "/tmp/.pi-under-pressure-video-input.yuv";
@@ -25,9 +30,12 @@ pub fn run_video_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>) {
     }
 
     while running.load(Ordering::Relaxed) {
-        if !run_encode_cycle(test_input) {
+        if !run_encode_cycle(test_input, encoder) {
             errors.fetch_add(1, Ordering::Relaxed);
         }
+
+        // Small delay between cycles to prevent overwhelming the system
+        thread::sleep(Duration::from_millis(100));
     }
 
     // Cleanup
@@ -42,22 +50,6 @@ fn is_ffmpeg_available() -> bool {
         .output()
         .map(|o| o.status.success())
         .unwrap_or(false)
-}
-
-/// Check if V4L2 H.265 encoder is available
-fn is_v4l2_encoder_available() -> bool {
-    // Check for V4L2 M2M device
-    if std::path::Path::new("/dev/video10").exists() {
-        return true;
-    }
-
-    // Check ffmpeg encoders
-    if let Ok(output) = Command::new("ffmpeg").args(["-encoders"]).output() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return stdout.contains("hevc_v4l2m2m") || stdout.contains("h264_v4l2m2m");
-    }
-
-    false
 }
 
 /// Create a test video input (raw YUV data)
@@ -91,54 +83,70 @@ fn create_test_video(path: &str) -> std::io::Result<()> {
     }
 }
 
-/// Run a single encode cycle using hardware encoder
-fn run_encode_cycle(input_path: &str) -> bool {
-    let output_path = "/tmp/.pi-under-pressure-video-output.h265";
-
-    // Try V4L2 H.265 encoder first, fallback to H.264
-    let encoder = if check_encoder_available("hevc_v4l2m2m") {
-        "hevc_v4l2m2m"
-    } else if check_encoder_available("h264_v4l2m2m") {
-        "h264_v4l2m2m"
-    } else {
-        // Fallback to software encoder (still stresses CPU)
-        "libx265"
-    };
-
+/// Run a single encode cycle using the specified encoder
+fn run_encode_cycle(input_path: &str, encoder: &str) -> bool {
     let result = Command::new("ffmpeg")
         .args([
             "-y",
-            "-f",
-            "rawvideo",
-            "-pix_fmt",
-            "yuv420p",
-            "-s",
-            "1280x720",
-            "-r",
-            "30",
-            "-i",
-            input_path,
-            "-c:v",
-            encoder,
-            "-f",
-            "null",
+            "-f", "rawvideo",
+            "-pix_fmt", "yuv420p",
+            "-s", "1280x720",
+            "-r", "30",
+            "-i", input_path,
+            "-c:v", encoder,
+            "-f", "null",
             "-", // Discard output
         ])
-        .output();
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
 
-    match result {
-        Ok(output) => output.status.success(),
-        Err(_) => false,
-    }
+    result.map(|s| s.success()).unwrap_or(false)
 }
 
-/// Check if a specific encoder is available
+/// Check if a specific encoder is available (just checks listing)
 fn check_encoder_available(encoder: &str) -> bool {
     if let Ok(output) = Command::new("ffmpeg").args(["-encoders"]).output() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         return stdout.contains(encoder);
     }
     false
+}
+
+/// Actually test if encoder works by encoding a single frame
+/// This catches cases where encoder is listed but hardware isn't available
+fn test_encoder_works(encoder: &str) -> bool {
+    let result = Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-f", "lavfi",
+            "-i", "testsrc=duration=1:size=320x240:rate=10",
+            "-frames:v", "1",
+            "-c:v", encoder,
+            "-f", "null", "-",
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+
+    result.map(|s| s.success()).unwrap_or(false)
+}
+
+/// Find a working encoder, testing each one
+fn find_working_encoder() -> Option<&'static str> {
+    // Try hardware encoders first
+    for encoder in &["hevc_v4l2m2m", "h264_v4l2m2m"] {
+        if check_encoder_available(encoder) && test_encoder_works(encoder) {
+            return Some(*encoder);
+        }
+    }
+
+    // Fallback to software encoder (libx264 is lighter than libx265)
+    if check_encoder_available("libx264") && test_encoder_works("libx264") {
+        return Some("libx264");
+    }
+
+    None
 }
 
 #[cfg(test)]
@@ -152,8 +160,8 @@ mod tests {
     }
 
     #[test]
-    fn test_v4l2_check() {
+    fn test_find_encoder() {
         // This test just checks the function doesn't panic
-        let _ = is_v4l2_encoder_available();
+        let _ = find_working_encoder();
     }
 }
