@@ -20,6 +20,8 @@ pub struct StressConfig {
     pub threads: usize,
     pub duration: Duration,
     pub nvme_path: Option<String>,
+    /// Pre-detected video encoder (detect BEFORE TUI starts)
+    pub video_encoder: Option<&'static str>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -152,13 +154,18 @@ pub async fn run_stress_test(
         None
     };
 
-    // Start video stress if enabled
+    // Start video stress if enabled and encoder was pre-detected
     let video_handle = if config.video {
-        let running = running.clone();
-        let errors = video_errors.clone();
-        Some(std::thread::spawn(move || {
-            video::run_video_stress(running, errors);
-        }))
+        if let Some(encoder) = config.video_encoder {
+            let running = running.clone();
+            let errors = video_errors.clone();
+            Some(std::thread::spawn(move || {
+                video::run_video_stress_with_encoder(running, errors, encoder);
+            }))
+        } else {
+            // No working encoder found during pre-detection
+            None
+        }
     } else {
         None
     };

@@ -4,24 +4,22 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-/// Run video encoder stress test using hardware acceleration
-/// This requires ffmpeg with v4l2 support and a test video
-pub fn run_video_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>) {
-    // Check if ffmpeg is available
+/// Pre-detect working encoder before starting stress test
+/// Call this BEFORE TUI starts to avoid terminal corruption from V4L2 driver
+pub fn detect_encoder() -> Option<&'static str> {
     if !is_ffmpeg_available() {
-        eprintln!("Warning: ffmpeg not found, skipping video stress test");
-        return;
+        return None;
     }
+    find_working_encoder()
+}
 
-    // Find a working encoder (actually test it, don't just check listing)
-    let encoder = match find_working_encoder() {
-        Some(enc) => enc,
-        None => {
-            eprintln!("Warning: No working video encoder found, skipping video stress test");
-            return;
-        }
-    };
-
+/// Run video encoder stress test with pre-detected encoder
+/// Use detect_encoder() before TUI starts, then pass result here
+pub fn run_video_stress_with_encoder(
+    running: Arc<AtomicBool>,
+    errors: Arc<AtomicU64>,
+    encoder: &'static str,
+) {
     // Create test input if needed
     let test_input = "/tmp/.pi-under-pressure-video-input.yuv";
     if let Err(e) = create_test_video(test_input) {

@@ -107,6 +107,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         UiMode::Tui
     };
 
+    // Pre-detect video encoder BEFORE TUI starts (V4L2 driver can corrupt terminal)
+    let video_encoder = if args.video {
+        stress::video::detect_encoder()
+    } else {
+        None
+    };
+
     // Determine what to test
     // NVMe stress only runs with --extended or --nvme-only flags (not auto-detected)
     let stress_config = StressConfig {
@@ -117,6 +124,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         threads: args.threads.unwrap_or_else(num_cpus),
         duration,
         nvme_path: args.nvme_path,
+        video_encoder,
     };
 
     // Create channels for communication
