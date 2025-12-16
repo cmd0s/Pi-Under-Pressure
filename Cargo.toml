@@ -1,6 +1,6 @@
 [package]
 name = "pi-under-pressure"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Pi Under Pressure Contributors"]
 description = "Stability tester for overclocked Raspberry Pi 5"
