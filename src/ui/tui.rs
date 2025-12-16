@@ -19,8 +19,8 @@ use ratatui::{
 };
 use tokio::sync::mpsc;
 
-use crate::stress::StressStats;
 use super::format_duration;
+use crate::stress::StressStats;
 
 type Tui = Terminal<CrosstermBackend<Stdout>>;
 
@@ -119,10 +119,10 @@ fn render_ui(frame: &mut Frame, stats: &StressStats, total_secs: u64) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Length(3),           // Title
+            Constraint::Length(3),            // Title
             Constraint::Length(stats_height), // Stats (dynamic based on cores)
-            Constraint::Length(5),           // Progress
-            Constraint::Length(4),           // Footer (with GitHub link)
+            Constraint::Length(5),            // Progress
+            Constraint::Length(4),            // Footer (with GitHub link)
         ])
         .split(size);
 
@@ -150,10 +150,7 @@ fn render_title(frame: &mut Frame, area: Rect, stats: &StressStats) {
                 .add_modifier(Modifier::BOLD),
         ),
         Span::raw(" ─ Stability Tester ─ "),
-        Span::styled(
-            elapsed,
-            Style::default().fg(Color::Yellow),
-        ),
+        Span::styled(elapsed, Style::default().fg(Color::Yellow)),
     ]))
     .block(
         Block::default()
@@ -182,7 +179,10 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
     };
 
     let throttle_status = if stats.throttle_status.has_any_current_issue() {
-        Span::styled("YES - THROTTLING!", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+        Span::styled(
+            "YES - THROTTLING!",
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        )
     } else {
         Span::styled("None", Style::default().fg(Color::Green))
     };
@@ -201,7 +201,9 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             Span::raw("  Temp: "),
             Span::styled(
                 format!("{:.1}°C", stats.cpu_temp_c),
-                Style::default().fg(cpu_temp_color).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(cpu_temp_color)
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
                 format!(" (max: {:.1}°C)", stats.cpu_temp_max),
@@ -219,13 +221,14 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             Span::raw("  Errors: "),
             Span::styled(
                 format!("{}", stats.cpu_errors),
-                Style::default().fg(if stats.cpu_errors > 0 { Color::Red } else { Color::Green }),
+                Style::default().fg(if stats.cpu_errors > 0 {
+                    Color::Red
+                } else {
+                    Color::Green
+                }),
             ),
             Span::raw("  Fan: "),
-            Span::styled(
-                fan_str,
-                Style::default().fg(Color::Cyan),
-            ),
+            Span::styled(fan_str, Style::default().fg(Color::Cyan)),
         ]),
     ];
 
@@ -252,20 +255,16 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
                 Style::default().fg(Color::DarkGray),
             ),
             Span::raw("] "),
-            Span::styled(
-                format!("{:5.1}%", usage),
-                Style::default().fg(bar_color),
-            ),
+            Span::styled(format!("{:5.1}%", usage), Style::default().fg(bar_color)),
         ]));
     }
 
-    let cpu_info = Paragraph::new(cpu_lines)
-        .block(
-            Block::default()
-                .title(" CPU ")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Blue)),
-        );
+    let cpu_info = Paragraph::new(cpu_lines).block(
+        Block::default()
+            .title(" CPU ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Blue)),
+    );
 
     frame.render_widget(cpu_info, chunks[0]);
 
@@ -293,35 +292,41 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             Span::raw("  Memory Errors:    "),
             Span::styled(
                 format!("{}", stats.memory_errors),
-                Style::default().fg(if stats.memory_errors > 0 { Color::Red } else { Color::Green }),
+                Style::default().fg(if stats.memory_errors > 0 {
+                    Color::Red
+                } else {
+                    Color::Green
+                }),
             ),
         ]),
         Line::from(vec![
             Span::raw("  I/O Errors:       "),
             Span::styled(
                 format!("{}", stats.io_errors),
-                Style::default().fg(if stats.io_errors > 0 { Color::Red } else { Color::Green }),
+                Style::default().fg(if stats.io_errors > 0 {
+                    Color::Red
+                } else {
+                    Color::Green
+                }),
             ),
         ]),
         Line::from(vec![
             Span::raw("  NVMe Temperature: "),
-            Span::styled(
-                nvme_temp_str,
-                Style::default().fg(Color::Cyan),
-            ),
+            Span::styled(nvme_temp_str, Style::default().fg(Color::Cyan)),
         ]),
         Line::from(vec![
             Span::raw("  NVMe Test File:   "),
-            Span::styled(
-                nvme_test_path_str,
-                Style::default().fg(Color::Cyan),
-            ),
+            Span::styled(nvme_test_path_str, Style::default().fg(Color::Cyan)),
         ]),
         Line::from(vec![
             Span::raw("  Video Errors:     "),
             Span::styled(
                 format!("{}", stats.video_errors),
-                Style::default().fg(if stats.video_errors > 0 { Color::Red } else { Color::Green }),
+                Style::default().fg(if stats.video_errors > 0 {
+                    Color::Red
+                } else {
+                    Color::Green
+                }),
             ),
         ]),
     ])
@@ -353,11 +358,7 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Blue)),
         )
-        .gauge_style(
-            Style::default()
-                .fg(Color::Cyan)
-                .bg(Color::DarkGray),
-        )
+        .gauge_style(Style::default().fg(Color::Cyan).bg(Color::DarkGray))
         .percent((stats.progress_percent as u16).min(100))
         .label(format!(
             "{:.1}% | Remaining: {}",
@@ -383,9 +384,10 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
         stats.cpu_temp_c
     );
 
-    let temp_line = Paragraph::new(Line::from(vec![
-        Span::styled(temp_bar, Style::default().fg(temp_color)),
-    ]));
+    let temp_line = Paragraph::new(Line::from(vec![Span::styled(
+        temp_bar,
+        Style::default().fg(temp_color),
+    )]));
 
     frame.render_widget(temp_line, chunks[1]);
 }
@@ -393,21 +395,16 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
 fn render_footer(frame: &mut Frame, area: Rect) {
     let footer = Paragraph::new(vec![
         Line::from(vec![
-            Span::styled(
-                " GitHub: ",
-                Style::default().fg(Color::DarkGray),
-            ),
+            Span::styled(" GitHub: ", Style::default().fg(Color::DarkGray)),
             Span::styled(
                 "https://github.com/cmd0s/Pi-Under-Pressure",
                 Style::default().fg(Color::Blue),
             ),
         ]),
-        Line::from(vec![
-            Span::styled(
-                " Press 'q' or Ctrl+C to stop test gracefully ",
-                Style::default().fg(Color::DarkGray),
-            ),
-        ]),
+        Line::from(vec![Span::styled(
+            " Press 'q' or Ctrl+C to stop test gracefully ",
+            Style::default().fg(Color::DarkGray),
+        )]),
     ])
     .block(
         Block::default()

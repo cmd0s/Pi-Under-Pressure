@@ -137,7 +137,11 @@ pub async fn run_stress_test(
 
     // Start NVMe stress if enabled and available
     let nvme_test_path = if config.nvme && nvme_info.is_some() {
-        Some(nvme::get_test_file_path(nvme_info.as_ref().unwrap(), config.nvme_path.as_deref()).to_string_lossy().to_string())
+        Some(
+            nvme::get_test_file_path(nvme_info.as_ref().unwrap(), config.nvme_path.as_deref())
+                .to_string_lossy()
+                .to_string(),
+        )
     } else {
         None
     };
@@ -228,9 +232,7 @@ pub async fn run_stress_test(
             mem_used_mb: monitor_stats.mem_used_mb,
             mem_total_mb: monitor_stats.mem_total_mb,
             nvme_temp_c: if nvme_info.is_some() {
-                detection::nvme::get_nvme_temp(
-                    &nvme_info.as_ref().unwrap().device_path,
-                )
+                detection::nvme::get_nvme_temp(&nvme_info.as_ref().unwrap().device_path)
             } else {
                 None
             },

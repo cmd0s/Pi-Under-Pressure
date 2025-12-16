@@ -46,14 +46,8 @@ pub fn display_system_info(
 
     // System section
     println!("{}│  {}SYSTEM{}{}", cyan, bold, reset, reset);
-    println!(
-        "{}│  Model:          {}{}",
-        cyan, sys_info.model, reset
-    );
-    println!(
-        "{}│  Serial:         {}{}",
-        cyan, sys_info.serial, reset
-    );
+    println!("{}│  Model:          {}{}", cyan, sys_info.model, reset);
+    println!("{}│  Serial:         {}{}", cyan, sys_info.serial, reset);
     println!(
         "{}│  Firmware:       {}{}",
         cyan,
@@ -62,32 +56,26 @@ pub fn display_system_info(
     );
     println!(
         "{}│  CPU:            {} ({} cores){}",
-        cyan,
-        sys_info.cpu,
-        sys_info.cpu_cores,
-        reset
+        cyan, sys_info.cpu, sys_info.cpu_cores, reset
     );
-    println!(
-        "{}│  RAM:            {} MB{}",
-        cyan, sys_info.ram_mb, reset
-    );
+    println!("{}│  RAM:            {} MB{}", cyan, sys_info.ram_mb, reset);
     println!(
         "{}│  OS:             {}{}",
         cyan,
         truncate_str(&sys_info.os, 50),
         reset
     );
-    println!(
-        "{}│  Kernel:         {}{}",
-        cyan, sys_info.kernel, reset
-    );
+    println!("{}│  Kernel:         {}{}", cyan, sys_info.kernel, reset);
 
     // Overclocking section
     println!(
         "{}├──────────────────────────────────────────────────────────────{}",
         cyan, reset
     );
-    println!("{}│  {}OVERCLOCKING{} (/boot/firmware/config.txt){}", cyan, bold, reset, reset);
+    println!(
+        "{}│  {}OVERCLOCKING{} (/boot/firmware/config.txt){}",
+        cyan, bold, reset, reset
+    );
 
     let mut has_oc_params = false;
 
@@ -141,38 +129,27 @@ pub fn display_system_info(
 
     if let Some(ov) = oc_config.over_voltage {
         has_oc_params = true;
-        println!(
-            "{}│  over_voltage:       {}{}",
-            cyan, ov, reset
-        );
+        println!("{}│  over_voltage:       {}{}", cyan, ov, reset);
     }
 
     if let Some(ft) = oc_config.force_turbo {
         has_oc_params = true;
-        println!(
-            "{}│  force_turbo:        {}{}",
-            cyan, ft, reset
-        );
+        println!("{}│  force_turbo:        {}{}", cyan, ft, reset);
     }
 
     if let Some(cff) = oc_config.core_freq_fixed {
         has_oc_params = true;
-        println!(
-            "{}│  core_freq_fixed:    {}{}",
-            cyan, cff, reset
-        );
+        println!("{}│  core_freq_fixed:    {}{}", cyan, cff, reset);
     }
 
     if let Some(gen) = oc_config.pcie_gen {
         has_oc_params = true;
-        println!(
-            "{}│  dtparam=pciex1_gen: {}{}",
-            cyan, gen, reset
-        );
+        println!("{}│  dtparam=pciex1_gen: {}{}", cyan, gen, reset);
     }
 
     if !has_oc_params {
-        println!("{}│  {}(no overclocking parameters set){}",
+        println!(
+            "{}│  {}(no overclocking parameters set){}",
             cyan, dim, reset
         );
     }
@@ -187,24 +164,12 @@ pub fn display_system_info(
     let min_freq = crate::system::monitor::get_cpu_freq_min();
     let cur_freq = crate::system::monitor::get_cpu_freq();
     let max_freq = crate::system::monitor::get_cpu_freq_max();
-    println!(
-        "{}│  Min CPU freq:       {} MHz{}",
-        cyan, min_freq, reset
-    );
-    println!(
-        "{}│  Cur CPU freq:       {} MHz{}",
-        cyan, cur_freq, reset
-    );
-    println!(
-        "{}│  Max CPU freq:       {} MHz{}",
-        cyan, max_freq, reset
-    );
+    println!("{}│  Min CPU freq:       {} MHz{}", cyan, min_freq, reset);
+    println!("{}│  Cur CPU freq:       {} MHz{}", cyan, cur_freq, reset);
+    println!("{}│  Max CPU freq:       {} MHz{}", cyan, max_freq, reset);
 
     let governor = crate::system::monitor::get_governor();
-    println!(
-        "{}│  CPU Governor:       {}{}",
-        cyan, governor, reset
-    );
+    println!("{}│  CPU Governor:       {}{}", cyan, governor, reset);
 
     // Storage section
     if let Some(nvme) = nvme_info {
@@ -233,17 +198,16 @@ pub fn display_system_info(
         }
 
         if let Some(temp) = crate::detection::nvme::get_nvme_temp(&nvme.device_path) {
-            println!(
-                "{}│  NVMe Temperature:   {:.1}°C{}",
-                cyan, temp, reset
-            );
+            println!("{}│  NVMe Temperature:   {:.1}°C{}", cyan, temp, reset);
         }
 
         // Show NVMe test file path (auto-detected, user can override with --nvme-path)
         let test_path = crate::stress::nvme::get_test_file_path(nvme, None);
         println!(
             "{}│  NVMe Test File:     {}{}",
-            cyan, test_path.display(), reset
+            cyan,
+            test_path.display(),
+            reset
         );
     }
 
@@ -322,7 +286,10 @@ pub fn display_final_report(report: &FinalReport, no_color: bool) {
 
     println!();
     println!("═══════════════════════════════════════════════════════════════");
-    println!("{}                    STABILITY TEST RESULTS{}                    ", bold, reset);
+    println!(
+        "{}                    STABILITY TEST RESULTS{}                    ",
+        bold, reset
+    );
     println!("═══════════════════════════════════════════════════════════════");
 
     println!(
@@ -394,7 +361,10 @@ pub fn display_final_report(report: &FinalReport, no_color: bool) {
     println!();
 
     println!("Temperature Stats:");
-    println!("  CPU Max:         {:.1}°C (threshold: 85°C)", report.max_cpu_temp);
+    println!(
+        "  CPU Max:         {:.1}°C (threshold: 85°C)",
+        report.max_cpu_temp
+    );
     println!("  CPU Avg:         {:.1}°C", report.avg_cpu_temp);
     if let Some(nvme_max) = report.max_nvme_temp {
         println!("  NVMe Max:        {:.1}°C", nvme_max);
@@ -402,7 +372,11 @@ pub fn display_final_report(report: &FinalReport, no_color: bool) {
     println!();
 
     println!("Events:");
-    let throttle_color = if report.throttle_events > 0 { red } else { green };
+    let throttle_color = if report.throttle_events > 0 {
+        red
+    } else {
+        green
+    };
     println!(
         "  Throttling:      {}{}{}",
         throttle_color, report.throttle_events, reset
@@ -419,14 +393,21 @@ pub fn display_final_report(report: &FinalReport, no_color: bool) {
     );
 
     let io_color = if report.io_errors > 0 { red } else { green };
-    println!("  I/O Errors:      {}{}{}", io_color, report.io_errors, reset);
+    println!(
+        "  I/O Errors:      {}{}{}",
+        io_color, report.io_errors, reset
+    );
 
     // Show I/O error details if any
     for error in &report.io_error_details {
         println!("    {}→ {}{}", red, truncate_str(error, 70), reset);
     }
 
-    let smart_color = if report.smart_warnings > 0 { red } else { green };
+    let smart_color = if report.smart_warnings > 0 {
+        red
+    } else {
+        green
+    };
     println!(
         "  SMART Warnings:  {}{}{}",
         smart_color, report.smart_warnings, reset

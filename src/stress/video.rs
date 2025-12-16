@@ -89,15 +89,8 @@ fn create_test_video(path: &str) -> std::io::Result<()> {
 fn run_encode_cycle(input_path: &str, encoder: &str) -> bool {
     let result = Command::new("ffmpeg")
         .args([
-            "-y",
-            "-f", "rawvideo",
-            "-pix_fmt", "yuv420p",
-            "-s", "1280x720",
-            "-r", "30",
-            "-i", input_path,
-            "-c:v", encoder,
-            "-f", "null",
-            "-", // Discard output
+            "-y", "-f", "rawvideo", "-pix_fmt", "yuv420p", "-s", "1280x720", "-r", "30", "-i",
+            input_path, "-c:v", encoder, "-f", "null", "-", // Discard output
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -128,11 +121,17 @@ fn test_encoder_works(encoder: &str) -> bool {
     let result = Command::new("ffmpeg")
         .args([
             "-y",
-            "-f", "lavfi",
-            "-i", "testsrc=duration=1:size=320x240:rate=10",
-            "-frames:v", "1",
-            "-c:v", encoder,
-            "-f", "null", "-",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=duration=1:size=320x240:rate=10",
+            "-frames:v",
+            "1",
+            "-c:v",
+            encoder,
+            "-f",
+            "null",
+            "-",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::null())

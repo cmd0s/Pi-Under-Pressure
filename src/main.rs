@@ -17,7 +17,9 @@ use pi_under_pressure::{
 #[command(author = "Pi Under Pressure Contributors")]
 #[command(version)]
 #[command(about = "Stability tester for overclocked Raspberry Pi 5")]
-#[command(after_help = "NOTE: Run with sudo for full functionality (hardware sensors, NVMe stress testing).\n\nExample: sudo pi-under-pressure --duration 1h")]
+#[command(
+    after_help = "NOTE: Run with sudo for full functionality (hardware sensors, NVMe stress testing).\n\nExample: sudo pi-under-pressure --duration 1h"
+)]
 #[command(arg_required_else_help = true)]
 #[command(disable_version_flag = true)]
 struct Args {
@@ -119,7 +121,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stress_config = StressConfig {
         cpu: !args.memory_only && !args.nvme_only,
         memory: !args.cpu_only && !args.nvme_only,
-        nvme: (args.extended || args.nvme_only) && nvme_info.is_some() && !args.cpu_only && !args.memory_only,
+        nvme: (args.extended || args.nvme_only)
+            && nvme_info.is_some()
+            && !args.cpu_only
+            && !args.memory_only,
         video: args.video,
         threads: args.threads.unwrap_or_else(num_cpus),
         duration,

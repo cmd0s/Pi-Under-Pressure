@@ -7,7 +7,11 @@ const MIN_CHUNK_SIZE: usize = 64 * 1024 * 1024;
 
 /// Run memory stress test with multiple patterns
 /// allocation_bytes: how much memory this thread should allocate
-pub fn run_memory_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>, allocation_bytes: usize) {
+pub fn run_memory_stress(
+    running: Arc<AtomicBool>,
+    errors: Arc<AtomicU64>,
+    allocation_bytes: usize,
+) {
     let mut iteration: u64 = 0;
 
     // Allocate memory buffer (at least MIN_CHUNK_SIZE)
@@ -127,9 +131,8 @@ fn run_stream_stress(buffer: &mut [u8]) -> bool {
     let len = buffer.len() / 8;
 
     // Safety: buffer is aligned and large enough
-    let buffer_u64 = unsafe {
-        std::slice::from_raw_parts_mut(buffer.as_mut_ptr() as *mut u64, len)
-    };
+    let buffer_u64 =
+        unsafe { std::slice::from_raw_parts_mut(buffer.as_mut_ptr() as *mut u64, len) };
 
     // Copy operation
     let scalar: u64 = 3;
@@ -149,8 +152,8 @@ fn run_stream_stress(buffer: &mut [u8]) -> bool {
 
     // Triad operation: a = b + scalar * c
     for i in 0..len / 3 {
-        buffer_u64[i] = buffer_u64[i + len / 3]
-            .wrapping_add(scalar.wrapping_mul(buffer_u64[i + 2 * len / 3]));
+        buffer_u64[i] =
+            buffer_u64[i + len / 3].wrapping_add(scalar.wrapping_mul(buffer_u64[i + 2 * len / 3]));
     }
 
     // Just verify something was done

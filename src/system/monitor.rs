@@ -119,9 +119,9 @@ pub fn get_cpu_freq() -> u32 {
     }
 
     // Fallback: try sysfs
-    if let Ok(freq_str) = fs::read_to_string(
-        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq",
-    ) {
+    if let Ok(freq_str) =
+        fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")
+    {
         if let Ok(freq_khz) = freq_str.trim().parse::<u32>() {
             return freq_khz / 1000;
         }
@@ -132,9 +132,9 @@ pub fn get_cpu_freq() -> u32 {
 
 /// Get minimum CPU frequency from sysfs (in MHz)
 pub fn get_cpu_freq_min() -> u32 {
-    if let Ok(freq_str) = fs::read_to_string(
-        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq",
-    ) {
+    if let Ok(freq_str) =
+        fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq")
+    {
         if let Ok(freq_khz) = freq_str.trim().parse::<u32>() {
             return freq_khz / 1000;
         }
@@ -144,9 +144,9 @@ pub fn get_cpu_freq_min() -> u32 {
 
 /// Get maximum CPU frequency from sysfs (in MHz)
 pub fn get_cpu_freq_max() -> u32 {
-    if let Ok(freq_str) = fs::read_to_string(
-        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
-    ) {
+    if let Ok(freq_str) =
+        fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq")
+    {
         if let Ok(freq_khz) = freq_str.trim().parse::<u32>() {
             return freq_khz / 1000;
         }
@@ -280,8 +280,13 @@ impl CpuStatSnapshot {
         for (i, curr) in self.cores.iter().enumerate() {
             if let Some(prev_core) = prev.cores.get(i) {
                 let curr_total = curr.0 + curr.1 + curr.2 + curr.3 + curr.4 + curr.5 + curr.6;
-                let prev_total =
-                    prev_core.0 + prev_core.1 + prev_core.2 + prev_core.3 + prev_core.4 + prev_core.5 + prev_core.6;
+                let prev_total = prev_core.0
+                    + prev_core.1
+                    + prev_core.2
+                    + prev_core.3
+                    + prev_core.4
+                    + prev_core.5
+                    + prev_core.6;
 
                 let curr_idle = curr.3 + curr.4;
                 let prev_idle = prev_core.3 + prev_core.4;
@@ -355,10 +360,9 @@ pub fn get_fan_status() -> FanStatus {
                         fs::read_to_string(&cur_state),
                         fs::read_to_string(&max_state),
                     ) {
-                        if let (Ok(cur), Ok(max)) = (
-                            cur_str.trim().parse::<u32>(),
-                            max_str.trim().parse::<u32>(),
-                        ) {
+                        if let (Ok(cur), Ok(max)) =
+                            (cur_str.trim().parse::<u32>(), max_str.trim().parse::<u32>())
+                        {
                             if max > 0 {
                                 status.speed_percent = Some(((cur * 100) / max).min(100) as u8);
                                 break;
@@ -383,7 +387,7 @@ pub fn collect_stats() -> MonitorStats {
         gpu_freq_mhz: get_gpu_freq(),
         throttle_status: get_throttle_status(),
         governor: get_governor(),
-        cpu_usage_percent: 0.0, // Will be calculated by stress module
+        cpu_usage_percent: 0.0,         // Will be calculated by stress module
         cpu_usage_per_core: Vec::new(), // Will be calculated with CpuStatSnapshot
         mem_used_mb: mem_used,
         mem_total_mb: mem_total,

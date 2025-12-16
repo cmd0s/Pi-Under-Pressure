@@ -116,10 +116,7 @@ pub fn count_recent_io_errors() -> u32 {
     let mut count = 0;
 
     // Try to get recent dmesg with timestamps
-    if let Ok(output) = Command::new("dmesg")
-        .args(["--level=err", "-T"])
-        .output()
-    {
+    if let Ok(output) = Command::new("dmesg").args(["--level=err", "-T"]).output() {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -163,10 +160,10 @@ pub fn get_nvme_errors() -> Vec<String> {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
                 let line_lower = line.to_lowercase();
-                if line_lower.contains("nvme") &&
-                   (line_lower.contains("error") ||
-                    line_lower.contains("timeout") ||
-                    line_lower.contains("i/o"))
+                if line_lower.contains("nvme")
+                    && (line_lower.contains("error")
+                        || line_lower.contains("timeout")
+                        || line_lower.contains("i/o"))
                 {
                     errors.push(line.to_string());
                 }
@@ -248,7 +245,9 @@ mod tests {
 
     #[test]
     fn test_is_relevant_error() {
-        assert!(is_relevant_error("blk_update_request: I/O error, dev nvme0n1"));
+        assert!(is_relevant_error(
+            "blk_update_request: I/O error, dev nvme0n1"
+        ));
         assert!(is_relevant_error("Buffer I/O error on device sda1"));
         assert!(is_relevant_error("Kernel panic - not syncing"));
         assert!(!is_relevant_error("Normal log message"));

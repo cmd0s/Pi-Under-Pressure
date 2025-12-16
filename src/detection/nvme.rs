@@ -150,10 +150,7 @@ fn get_nvme_temp_hwmon() -> Option<f32> {
 
 /// Get NVMe temperature using smartctl
 fn get_nvme_temp_smartctl(device_path: &str) -> Option<f32> {
-    if let Ok(output) = Command::new("smartctl")
-        .args(["-A", device_path])
-        .output()
-    {
+    if let Ok(output) = Command::new("smartctl").args(["-A", device_path]).output() {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
@@ -184,10 +181,7 @@ fn get_nvme_temp_nvmecli(device_path: &str) -> Option<f32> {
         device
     };
 
-    if let Ok(output) = Command::new("nvme")
-        .args(["smart-log", device])
-        .output()
-    {
+    if let Ok(output) = Command::new("nvme").args(["smart-log", device]).output() {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
@@ -218,10 +212,7 @@ pub fn get_nvme_smart_status(device_path: &str) -> Option<SmartStatus> {
         device
     };
 
-    if let Ok(output) = Command::new("nvme")
-        .args(["smart-log", device])
-        .output()
-    {
+    if let Ok(output) = Command::new("nvme").args(["smart-log", device]).output() {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let mut status = SmartStatus::default();
@@ -234,11 +225,14 @@ pub fn get_nvme_smart_status(device_path: &str) -> Option<SmartStatus> {
                     if let Some(value) = parse_smart_value(line) {
                         status.critical_warning = value as u8;
                     }
-                } else if line_lower.contains("media_errors") || line_lower.contains("media errors") {
+                } else if line_lower.contains("media_errors") || line_lower.contains("media errors")
+                {
                     if let Some(value) = parse_smart_value(line) {
                         status.media_errors = value;
                     }
-                } else if line_lower.contains("num_err_log") || line_lower.contains("error log entries") {
+                } else if line_lower.contains("num_err_log")
+                    || line_lower.contains("error log entries")
+                {
                     if let Some(value) = parse_smart_value(line) {
                         status.error_log_entries = value;
                     }
