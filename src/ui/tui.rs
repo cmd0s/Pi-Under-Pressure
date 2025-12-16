@@ -187,6 +187,14 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         Span::styled("None", Style::default().fg(Color::Green))
     };
 
+    // Fan status string
+    let fan_str = match (stats.fan_status.speed_percent, stats.fan_status.rpm) {
+        (Some(pct), Some(rpm)) => format!("{}% ({} RPM)", pct, rpm),
+        (Some(pct), None) => format!("{}%", pct),
+        (None, Some(rpm)) => format!("{} RPM", rpm),
+        (None, None) => "N/A".to_string(),
+    };
+
     // Build CPU info lines including per-core usage
     let mut cpu_lines = vec![
         Line::from(vec![
@@ -212,6 +220,11 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             Span::styled(
                 format!("{}", stats.cpu_errors),
                 Style::default().fg(if stats.cpu_errors > 0 { Color::Red } else { Color::Green }),
+            ),
+            Span::raw("  Fan: "),
+            Span::styled(
+                fan_str,
+                Style::default().fg(Color::Cyan),
             ),
         ]),
     ];
@@ -256,18 +269,10 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
 
     frame.render_widget(cpu_info, chunks[0]);
 
-    // Right column - Memory, NVMe, and Fan stats
+    // Right column - Memory and NVMe stats
     let nvme_temp_str = match stats.nvme_temp_c {
         Some(temp) => format!("{:.1}°C", temp),
         None => "N/A".to_string(),
-    };
-
-    // Fan status string
-    let fan_str = match (stats.fan_status.speed_percent, stats.fan_status.rpm) {
-        (Some(pct), Some(rpm)) => format!("{}% ({} RPM)", pct, rpm),
-        (Some(pct), None) => format!("{}%", pct),
-        (None, Some(rpm)) => format!("{} RPM", rpm),
-        (None, None) => "N/A".to_string(),
     };
 
     // NVMe test path string
@@ -281,13 +286,6 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
             Span::raw("  RAM Usage:        "),
             Span::styled(
                 format!("{} / {} MB", stats.mem_used_mb, stats.mem_total_mb),
-                Style::default().fg(Color::Cyan),
-            ),
-        ]),
-        Line::from(vec![
-            Span::raw("  Fan Speed:        "),
-            Span::styled(
-                fan_str,
                 Style::default().fg(Color::Cyan),
             ),
         ]),
