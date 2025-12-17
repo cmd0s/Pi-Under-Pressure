@@ -13,7 +13,7 @@ Pi Under Pressure is a comprehensive stress testing tool designed specifically f
 - **CPU Stress Testing**: FFT, matrix multiplication, prime sieve, and AES-256 workloads
 - **Memory Stress Testing**: Random access, sequential patterns, and STREAM-like bandwidth tests
 - **NVMe Stress Testing**: 4K random I/O and sequential bandwidth tests (auto-detected)
-- **Video Encoder Stress**: Optional hardware H.265 encoder stress via V4L2 (`-V`, requires `ffmpeg`)
+- **Video Encoder Stress**: Optional hardware H.264 encoder stress via V4L2 (`-V`, requires `ffmpeg`)
 - **Real-time Monitoring**: Temperature, frequency, throttling status, and errors
 - **Fancy TUI**: Interactive terminal UI with progress bars and gauges
 - **Error Detection**: Monitors dmesg/journalctl for I/O errors and kernel issues
