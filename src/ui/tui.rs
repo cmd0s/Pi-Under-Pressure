@@ -233,7 +233,7 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
 
     // Add per-core CPU usage bars
     for (i, usage) in stats.cpu_usage_per_core.iter().enumerate() {
-        let bar_width = 12;
+        let bar_width = 10;
         let filled = ((usage / 100.0) * bar_width as f32) as usize;
         let bar_color = if *usage >= 95.0 {
             Color::Green
