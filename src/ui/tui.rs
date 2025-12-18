@@ -246,11 +246,11 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         cpu_lines.push(Line::from(vec![
             Span::raw(format!("  CPU{}: [", i)),
             Span::styled(
-                "█".repeat(filled.min(bar_width)),
+                "▄".repeat(filled.min(bar_width)),
                 Style::default().fg(bar_color),
             ),
             Span::styled(
-                "░".repeat(bar_width.saturating_sub(filled)),
+                " ".repeat(bar_width.saturating_sub(filled)),
                 Style::default().fg(Color::DarkGray),
             ),
             Span::raw("] "),
