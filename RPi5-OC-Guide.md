@@ -34,15 +34,16 @@ The author is not responsible for any damage resulting from following this guide
 9. [CPU Governor Settings](#cpu-governor-settings)
 10. [Monitoring and Diagnostics](#monitoring-and-diagnostics)
 11. [Fan Speed Configuration](#fan-speed-configuration)
-12. [Understanding Throttling](#understanding-throttling)
-13. [Recovery When System Won't Boot](#recovery-when-system-wont-boot)
-14. [Performance Benchmarking](#performance-benchmarking)
-15. [OS Performance Differences](#os-performance-differences)
-16. [Achievable Results and Silicon Lottery](#achievable-results-and-silicon-lottery)
-17. [Best Practices Summary](#best-practices-summary)
-18. [Advanced: Beyond 3.0 GHz](#advanced-beyond-30-ghz)
-19. [FAQ and Troubleshooting](#faq-and-troubleshooting)
-20. [Reference Links](#reference-links)
+12. [PCIe Gen 3 Mode](#pcie-gen-3-mode)
+13. [Understanding Throttling](#understanding-throttling)
+14. [Recovery When System Won't Boot](#recovery-when-system-wont-boot)
+15. [Performance Benchmarking](#performance-benchmarking)
+16. [OS Performance Differences](#os-performance-differences)
+17. [Achievable Results and Silicon Lottery](#achievable-results-and-silicon-lottery)
+18. [Best Practices Summary](#best-practices-summary)
+19. [Advanced: Beyond 3.0 GHz](#advanced-beyond-30-ghz)
+20. [FAQ and Troubleshooting](#faq-and-troubleshooting)
+21. [Reference Links](#reference-links)
 
 ---
 
@@ -445,7 +446,7 @@ sudo pi-under-pressure -d 1h -V
 
 <img width="1402" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Main-v0_1_8_a.png" />
 
-<img width="852" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Results-v0_1_8_a.png" />
+<img width="852" alt="Pi-Under-Pressure-Screen-Results-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Results-v0_1_8_a.png" />
 
 ### Testing Strategy
 
@@ -539,25 +540,25 @@ Use `schedutil` for daily use — it's more responsive than `ondemand` and still
 **Check CPU temperature:**
 
 ```bash
-vcgencmd measure_temp
+sudo vcgencmd measure_temp
 ```
 
 **Check current CPU frequency:**
 
 ```bash
-vcgencmd measure_clock arm
+sudo vcgencmd measure_clock arm
 ```
 
 **Check GPU frequency:**
 
 ```bash
-vcgencmd measure_clock core
+sudo vcgencmd measure_clock core
 ```
 
 **Check voltage:**
 
 ```bash
-vcgencmd pmic_read_adc
+sudo vcgencmd pmic_read_adc
 ```
 
 Look for `EXT5V_V` — this shows the actual voltage your Pi is receiving.
@@ -565,10 +566,12 @@ Look for `EXT5V_V` — this shows the actual voltage your Pi is receiving.
 ### Throttling Status
 
 ```bash
-vcgencmd get_throttled
+sudo vcgencmd get_throttled
 ```
 
 This returns a hexadecimal value representing the current and historical throttling status.
+
+<img width="1404" alt="vcgencmd commands" src="img/vcgencmd_x.png" />
 
 ### Throttle Flag Meanings
 
@@ -598,7 +601,7 @@ This returns a hexadecimal value representing the current and historical throttl
 
 **For a successful overclock, you want `0x0` after a stress test.**
 
-<img width="360" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/vcgencmd-get_throttled.png" />
+<img width="360" alt="vcgencmd-get_throttled" src="img/vcgencmd-get_throttled.png" />
 
 ### Continuous Monitoring
 
@@ -606,7 +609,7 @@ This returns a hexadecimal value representing the current and historical throttl
 sudo watch -n 1 'vcgencmd measure_temp && vcgencmd measure_clock arm && vcgencmd get_throttled'
 ```
 
-<img width="600" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/vcgencmd-measure.png" />
+<img width="600" alt="vcgencmd-measure" src="img/vcgencmd-measure.png" />
 
 ---
 
@@ -653,6 +656,66 @@ dtparam=fan_temp3_speed=255
 - `fan_tempX` — Temperature threshold in millidegrees (45000 = 45°C)
 - `fan_tempX_hyst` — Hysteresis to prevent rapid on/off cycling
 - `fan_tempX_speed` — PWM value 0-255 (255 = maximum)
+
+---
+
+## PCIe Gen 3 Mode
+
+The Raspberry Pi 5 features a single PCIe lane that officially operates at **PCIe Generation 2** speeds. However, forcing PCIe Gen 3 mode is a simple configuration change that **doubles the bandwidth** — a form of overclocking that's particularly beneficial for NVMe storage users.
+
+### Default vs Overclocked PCIe
+
+| Mode | Speed | Bandwidth | Status |
+|------|-------|-----------|--------|
+| **Gen 2** (default) | 5 GT/s | ~500 MB/s | Officially supported |
+| **Gen 3** (forced) | 8 GT/s | ~1000 MB/s | Unofficially supported |
+
+### Why Force Gen 3?
+
+While PCIe Gen 3 is not officially supported by Raspberry Pi, in practice:
+
+- **It works very well** — Almost all NVMe adapters and drives handle Gen 3 speeds correctly
+- **Double the throughput** — Significant improvement for NVMe SSD performance
+- **No stability issues** — From extensive testing, Gen 3 mode is reliable for daily use
+- **Easy to enable** — Simple config.txt change, easy to revert if needed
+
+### Configuration
+
+Add the following lines to `/boot/firmware/config.txt` under the `[pi5]` or `[all]` section:
+
+```ini
+[pi5]
+# Enable PCIe
+dtparam=pciex1
+
+# Enable PCIe Gen 3 (default is Gen 2)
+dtparam=pciex1_gen=3
+```
+
+**After adding these lines, reboot for changes to take effect.**
+
+### Verification
+
+After rebooting, verify the PCIe link speed:
+
+```bash
+sudo lspci -vv | grep -i "lnksta:"
+```
+
+Look for `Speed 8GT/s` to confirm Gen 3 mode is active.
+
+### When to Use This
+
+- **NVMe SSD users** — If you're booting from or using NVMe storage, Gen 3 provides a noticeable performance improvement
+- **High-bandwidth peripherals** — Any PCIe device that can benefit from increased bandwidth
+
+### Compatibility Notes
+
+- **Most adapters work** — The vast majority of NVMe HATs and adapters support Gen 3 speeds without issues
+- **Some older devices may not work** — If you experience instability, remove the `pciex1_gen=3` line to revert to Gen 2
+- **Official Pi HAT+** — The official Raspberry Pi M.2 HAT+ works reliably with Gen 3 enabled
+
+---
 
 ## Understanding Throttling
 
@@ -731,7 +794,7 @@ cd Geekbench-6.4.0-LinuxARMPreview
 
 ### GeekBench 6 Scores
 
-<img width="1698" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/DietPiOS-GeekBench6-3100vs2400.png" />
+<img width="1698" alt="GeekBench-6-results" src="img/DietPiOS-GeekBench6-3100vs2400.png" />
 [Screenshot: GeekBench 6 results comparing stock 2.4 GHz vs overclocked 3.1 GHz with DietPi OS]
 
 ### Current GeekBench 6 Records (as of December 18, 2025)
