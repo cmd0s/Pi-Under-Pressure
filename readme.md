@@ -6,7 +6,7 @@ Pi Under Pressure is a comprehensive stress testing tool designed specifically f
 
 ## Screenshoot
 
-<img width="1760" height="764" alt="image" src="https://github.com/user-attachments/assets/2924dd97-a644-4716-99ae-d7c23c46ccc6" />
+<img width="1426" height="1426" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="https://github.com/user-attachments/assets/76e8a96d-ec70-4ae4-9537-f8aba7f02ac2" />
 
 ## Features
 
@@ -47,6 +47,9 @@ sudo mv pi-under-pressure-linux-arm64 /usr/local/bin/pi-under-pressure
 ```bash
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install required packages
+sudo apt install -y build-essential pkg-config
 
 # Clone and build
 git clone https://github.com/cmd0s/Pi-Under-Pressure.git
