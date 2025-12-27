@@ -194,7 +194,10 @@ fn render_title(frame: &mut Frame, area: Rect, stats: &StressStats) {
     lines.push(Line::from(vec![
         Span::raw("                         "),
         Span::styled("─ Stability Tester ", Style::default().fg(Color::White)),
-        Span::styled(format!("v{}", version), Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            format!("v{}", version),
+            Style::default().fg(Color::DarkGray),
+        ),
         Span::styled(" ─ ", Style::default().fg(Color::White)),
         Span::styled(
             elapsed,
@@ -318,10 +321,7 @@ fn render_cpu_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
     let temp_filled = (temp_percent as usize * temp_bar_width / 100).min(temp_bar_width);
     cpu_lines.push(Line::from(vec![
         Span::raw("  Temp: ["),
-        Span::styled(
-            "█".repeat(temp_filled),
-            Style::default().fg(temp_bar_color),
-        ),
+        Span::styled("█".repeat(temp_filled), Style::default().fg(temp_bar_color)),
         Span::styled(
             "░".repeat(temp_bar_width.saturating_sub(temp_filled)),
             Style::default().fg(Color::DarkGray),
