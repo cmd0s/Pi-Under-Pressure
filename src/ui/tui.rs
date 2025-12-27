@@ -21,6 +21,21 @@ use tokio::sync::mpsc;
 use super::format_duration;
 use crate::stress::StressStats;
 
+/// ASCII art title - Full "Pi Under Pressure" in Figlet style
+const ASCII_TITLE: &[&str] = &[
+    r" ____  _   _   _           _             ____                                      ",
+    r"|  _ \(_) | | | |_ __   __| | ___ _ __  |  _ \ _ __ ___  ___ ___ _   _ _ __ ___    ",
+    r"| |_) | | | | | | '_ \ / _` |/ _ \ '__| | |_) | '__/ _ \/ __/ __| | | | '__/ _ \   ",
+    r"|  __/| | | |_| | | | | (_| |  __/ |    |  __/| | |  __/\__ \__ \ |_| | | |  __/   ",
+    r"|_|   |_|  \___/|_| |_|\__,_|\___|_|    |_|   |_|  \___||___/___/\__,_|_|  \___|   ",
+];
+
+/// Height constants for layout
+const TITLE_HEIGHT: u16 = 8; // ASCII (5) + timer line (1) + borders (2)
+const MEM_HEIGHT: u16 = 8; // Memory section (6 lines + 2 border)
+const PROGRESS_HEIGHT: u16 = 3; // Progress bar section (1 content + 2 border)
+const FOOTER_HEIGHT: u16 = 7; // Footer (4 content + 2 border + 1 padding)
+
 type Tui = Terminal<CrosstermBackend<Stdout>>;
 
 /// Initialize the terminal for TUI
@@ -109,49 +124,68 @@ pub async fn run_tui(
 fn render_ui(frame: &mut Frame, stats: &StressStats, total_secs: u64) {
     let size = frame.area();
 
-    // Calculate stats height based on number of cores (2 header lines + per-core bars + borders)
+    // Calculate CPU stats height based on number of cores (2 header lines + per-core bars + temp bar + borders)
     let num_cores = stats.cpu_usage_per_core.len().max(4);
-    let stats_height = (2 + num_cores + 2) as u16; // +2 for borders
+    let cpu_height = (2 + num_cores + 1 + 2) as u16; // +1 for temp bar, +2 for borders
 
-    // Create main layout
+    // Create main layout with 5 sections (vertical stacking)
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Length(3),            // Title
-            Constraint::Length(stats_height), // Stats (dynamic based on cores)
-            Constraint::Length(5),            // Progress
-            Constraint::Length(4),            // Footer (with GitHub link)
+            Constraint::Length(TITLE_HEIGHT),    // ASCII art title
+            Constraint::Length(cpu_height),      // CPU stats
+            Constraint::Length(MEM_HEIGHT),      // Memory & Storage
+            Constraint::Length(PROGRESS_HEIGHT), // Progress
+            Constraint::Length(FOOTER_HEIGHT),   // Footer
         ])
         .split(size);
 
-    // Title
+    // Title with ASCII art
     render_title(frame, chunks[0], stats);
 
-    // Stats
-    render_stats(frame, chunks[1], stats);
+    // CPU Stats
+    render_cpu_stats(frame, chunks[1], stats);
+
+    // Memory & Storage Stats
+    render_memory_stats(frame, chunks[2], stats);
 
     // Progress
-    render_progress(frame, chunks[2], stats, total_secs);
+    render_progress(frame, chunks[3], stats, total_secs);
 
     // Footer
-    render_footer(frame, chunks[3]);
+    render_footer(frame, chunks[4]);
 }
 
 fn render_title(frame: &mut Frame, area: Rect, stats: &StressStats) {
     let elapsed = format_duration(stats.elapsed_secs);
 
-    let title = Paragraph::new(Line::from(vec![
+    // Build ASCII art lines
+    let mut lines: Vec<Line> = ASCII_TITLE
+        .iter()
+        .map(|line| {
+            Line::from(Span::styled(
+                *line,
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ))
+        })
+        .collect();
+
+    // Add timer line below ASCII art
+    lines.push(Line::from(vec![
+        Span::raw("                              "),
+        Span::styled("─ Stability Tester ─ ", Style::default().fg(Color::White)),
         Span::styled(
-            " Pi Under Pressure ",
+            elapsed,
             Style::default()
-                .fg(Color::Cyan)
+                .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw(" ─ Stability Tester ─ "),
-        Span::styled(elapsed, Style::default().fg(Color::Yellow)),
-    ]))
-    .block(
+    ]));
+
+    let title = Paragraph::new(lines).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan)),
@@ -160,13 +194,7 @@ fn render_title(frame: &mut Frame, area: Rect, stats: &StressStats) {
     frame.render_widget(title, area);
 }
 
-fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(area);
-
-    // Left column - CPU stats with per-core usage
+fn render_cpu_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
     let cpu_temp_color = if stats.cpu_temp_c >= 85.0 {
         Color::Red
     } else if stats.cpu_temp_c >= 80.0 {
@@ -231,9 +259,9 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         ]),
     ];
 
-    // Add per-core CPU usage bars
+    // Add per-core CPU usage bars (wider bars for vertical layout)
     for (i, usage) in stats.cpu_usage_per_core.iter().enumerate() {
-        let bar_width = 10;
+        let bar_width = 40;
         let filled = ((usage / 100.0) * bar_width as f32) as usize;
         let bar_color = if *usage >= 95.0 {
             Color::Green
@@ -258,22 +286,50 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         ]));
     }
 
+    // Add CPU temperature bar
+    let temp_percent = ((stats.cpu_temp_c / 100.0) * 100.0) as u16;
+    let temp_bar_color = if stats.cpu_temp_c >= 85.0 {
+        Color::Red
+    } else if stats.cpu_temp_c >= 80.0 {
+        Color::Yellow
+    } else {
+        Color::Green
+    };
+    let temp_bar_width = 40;
+    let temp_filled = (temp_percent as usize * temp_bar_width / 100).min(temp_bar_width);
+    cpu_lines.push(Line::from(vec![
+        Span::raw("  Temp: ["),
+        Span::styled(
+            "█".repeat(temp_filled),
+            Style::default().fg(temp_bar_color),
+        ),
+        Span::styled(
+            "░".repeat(temp_bar_width.saturating_sub(temp_filled)),
+            Style::default().fg(Color::DarkGray),
+        ),
+        Span::raw("] "),
+        Span::styled(
+            format!("{:.1}°C / 85°C", stats.cpu_temp_c),
+            Style::default().fg(temp_bar_color),
+        ),
+    ]));
+
     let cpu_info = Paragraph::new(cpu_lines).block(
         Block::default()
             .title(" CPU ")
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Blue)),
+            .border_style(Style::default().fg(Color::Cyan)),
     );
 
-    frame.render_widget(cpu_info, chunks[0]);
+    frame.render_widget(cpu_info, area);
+}
 
-    // Right column - Memory and NVMe stats
+fn render_memory_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
     let nvme_temp_str = match stats.nvme_temp_c {
         Some(temp) => format!("{:.1}°C", temp),
         None => "N/A".to_string(),
     };
 
-    // NVMe test path string
     let nvme_test_path_str = match &stats.nvme_test_path {
         Some(path) => path.clone(),
         None => "N/A".to_string(),
@@ -333,20 +389,13 @@ fn render_stats(frame: &mut Frame, area: Rect, stats: &StressStats) {
         Block::default()
             .title(" Memory & Storage ")
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Blue)),
+            .border_style(Style::default().fg(Color::Cyan)),
     );
 
-    frame.render_widget(mem_info, chunks[1]);
+    frame.render_widget(mem_info, area);
 }
 
 fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_secs: u64) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(1)])
-        .split(area);
-
-    // Progress bar
-    let _progress = stats.progress_percent.min(100.0) / 100.0;
     let remaining_secs = total_secs.saturating_sub(stats.elapsed_secs);
     let remaining_str = format_duration(remaining_secs);
 
@@ -355,7 +404,7 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
             Block::default()
                 .title(" Progress ")
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Blue)),
+                .border_style(Style::default().fg(Color::Cyan)),
         )
         .gauge_style(Style::default().fg(Color::Cyan).bg(Color::DarkGray))
         .percent((stats.progress_percent as u16).min(100))
@@ -364,45 +413,34 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
             stats.progress_percent, remaining_str
         ));
 
-    frame.render_widget(gauge, chunks[0]);
-
-    // Temperature gauge
-    let temp_percent = ((stats.cpu_temp_c / 100.0) * 100.0) as u16;
-    let temp_color = if stats.cpu_temp_c >= 85.0 {
-        Color::Red
-    } else if stats.cpu_temp_c >= 80.0 {
-        Color::Yellow
-    } else {
-        Color::Green
-    };
-
-    let temp_bar = format!(
-        "  CPU Temp: [{}{}] {:.1}°C / 85°C",
-        "█".repeat((temp_percent as usize * 30 / 100).min(30)),
-        "░".repeat(30 - (temp_percent as usize * 30 / 100).min(30)),
-        stats.cpu_temp_c
-    );
-
-    let temp_line = Paragraph::new(Line::from(vec![Span::styled(
-        temp_bar,
-        Style::default().fg(temp_color),
-    )]));
-
-    frame.render_widget(temp_line, chunks[1]);
+    frame.render_widget(gauge, area);
 }
 
 fn render_footer(frame: &mut Frame, area: Rect) {
     let footer = Paragraph::new(vec![
         Line::from(vec![
-            Span::styled(" GitHub: ", Style::default().fg(Color::DarkGray)),
+            Span::styled("  GitHub: ", Style::default().fg(Color::DarkGray)),
             Span::styled(
                 "https://github.com/cmd0s/Pi-Under-Pressure",
-                Style::default().fg(Color::Blue),
+                Style::default().fg(Color::Cyan),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("  Guide:  ", Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                "[Overclocking Guide - Coming Soon]",
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::ITALIC),
             ),
         ]),
         Line::from(vec![Span::styled(
-            " Press 'q' or Ctrl+C to stop test gracefully ",
+            "  Run with '-h' to see all options",
             Style::default().fg(Color::DarkGray),
+        )]),
+        Line::from(vec![Span::styled(
+            "  Press 'q' or Ctrl+C to stop test gracefully",
+            Style::default().fg(Color::White),
         )]),
     ])
     .block(
