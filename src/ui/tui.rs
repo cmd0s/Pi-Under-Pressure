@@ -447,10 +447,8 @@ fn render_footer(frame: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled("  Guide:  ", Style::default().fg(Color::DarkGray)),
             Span::styled(
-                "[Overclocking Guide - Coming Soon]",
-                Style::default()
-                    .fg(Color::DarkGray)
-                    .add_modifier(Modifier::ITALIC),
+                "https://github.com/cmd0s/Pi-Under-Pressure/blob/main/RPi5-OC-Guide.md",
+                Style::default().fg(Color::Cyan),
             ),
         ]),
         Line::from(vec![Span::styled(
