@@ -21,17 +21,20 @@ use tokio::sync::mpsc;
 use super::format_duration;
 use crate::stress::StressStats;
 
-/// ASCII art title - Full "Pi Under Pressure" in Figlet style
+/// ASCII art title - "Pi Under Pressure" in Fire Font-s style
 const ASCII_TITLE: &[&str] = &[
-    r" ____  _   _   _           _             ____                                      ",
-    r"|  _ \(_) | | | |_ __   __| | ___ _ __  |  _ \ _ __ ___  ___ ___ _   _ _ __ ___    ",
-    r"| |_) | | | | | | '_ \ / _` |/ _ \ '__| | |_) | '__/ _ \/ __/ __| | | | '__/ _ \   ",
-    r"|  __/| | | |_| | | | | (_| |  __/ |    |  __/| | |  __/\__ \__ \ |_| | | |  __/   ",
-    r"|_|   |_|  \___/|_| |_|\__,_|\___|_|    |_|   |_|  \___||___/___/\__,_|_|  \___|   ",
+    r" (                 ) (         (      (   (       (   (         (        ",
+    r" )\ )           ( /( )\ )      )\ )   )\ ))\ )    )\ ))\ )      )\ )     ",
+    r"(()/((       (  )\()|()/(  (  (()/(  (()/(()/((  (()/(()/(   ( (()/((    ",
+    r" /(_))\      )\((_)\ /(_)) )\  /(_))  /(_))(_))\  /(_))(_))  )\ /(_))\   ",
+    r"(_))((_)  _ ((_)_((_|_))_ ((_)(_))   (_))(_))((_)(_))(_)) _ ((_|_))((_)  ",
+    r"| _ \(_) | | | | \| ||   \| __| _ \  | _ \ _ \ __/ __/ __| | | | _ \ __| ",
+    r"|  _/| | | |_| | .` || |) | _||   /  |  _/   / _|\__ \__ \ |_| |   / _|  ",
+    r"|_|  |_|  \___/|_|\_||___/|___|_|_\  |_| |_|_\___|___/___/\___/|_|_\___| ",
 ];
 
 /// Height constants for layout
-const TITLE_HEIGHT: u16 = 8; // ASCII (5) + timer line (1) + borders (2)
+const TITLE_HEIGHT: u16 = 11; // ASCII (8) + timer line (1) + borders (2)
 const MEM_HEIGHT: u16 = 8; // Memory section (6 lines + 2 border)
 const PROGRESS_HEIGHT: u16 = 3; // Progress bar section (1 content + 2 border)
 const FOOTER_HEIGHT: u16 = 7; // Footer (4 content + 2 border + 1 padding)
@@ -160,23 +163,39 @@ fn render_ui(frame: &mut Frame, stats: &StressStats, total_secs: u64) {
 fn render_title(frame: &mut Frame, area: Rect, stats: &StressStats) {
     let elapsed = format_duration(stats.elapsed_secs);
 
-    // Build ASCII art lines
+    // Build ASCII art lines: fire gradient on flames (top), solid color on text (bottom)
+    let fire_colors = [
+        Color::Red,         // Line 0 - flame tips
+        Color::Red,         // Line 1
+        Color::LightRed,    // Line 2
+        Color::Yellow,      // Line 3
+        Color::LightYellow, // Line 4 - hottest flames
+    ];
+
     let mut lines: Vec<Line> = ASCII_TITLE
         .iter()
-        .map(|line| {
+        .enumerate()
+        .map(|(i, line)| {
+            // Lines 0-4: fire gradient, Lines 5-7: solid cyan for text
+            let color = if i < 5 {
+                fire_colors.get(i).copied().unwrap_or(Color::Yellow)
+            } else {
+                Color::Cyan // Solid color for "Pi UNDER PRESSURE" text
+            };
             Line::from(Span::styled(
                 *line,
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(color).add_modifier(Modifier::BOLD),
             ))
         })
         .collect();
 
-    // Add timer line below ASCII art
+    // Add timer line below ASCII art (with version)
+    let version = env!("CARGO_PKG_VERSION");
     lines.push(Line::from(vec![
-        Span::raw("                              "),
-        Span::styled("─ Stability Tester ─ ", Style::default().fg(Color::White)),
+        Span::raw("                         "),
+        Span::styled("─ Stability Tester ", Style::default().fg(Color::White)),
+        Span::styled(format!("v{}", version), Style::default().fg(Color::DarkGray)),
+        Span::styled(" ─ ", Style::default().fg(Color::White)),
         Span::styled(
             elapsed,
             Style::default()
