@@ -6,7 +6,7 @@ Pi Under Pressure is a comprehensive stress testing tool designed specifically f
 
 ## Screenshoot
 
-<img width="1426" height="1426" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="https://github.com/user-attachments/assets/76e8a96d-ec70-4ae4-9537-f8aba7f02ac2" />
+<img width="1426" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Main-v0_1_8_a.png" />
 
 ## Features
 
@@ -104,60 +104,11 @@ CONTROLS:
 
 On startup, Pi Under Pressure displays comprehensive system information:
 
-```
-+----------------------------------------------------------------+
-|  Pi Under Pressure v0.1.8 - Stability Tester for RPi5          |
-+----------------------------------------------------------------+
-|  SYSTEM                                                        |
-|  Model:          Raspberry Pi 5 Model B Rev 1.0                |
-|  Serial:         10000000xxxxxxxx                              |
-|  Firmware:       Dec  6 2024 14:32:sp (xxxxx)                  |
-|  CPU:            ARM Cortex-A76 (4 cores)                      |
-|  RAM:            8192 MB                                       |
-|  OS:             Debian GNU/Linux 12 (bookworm) aarch64        |
-|  Kernel:         6.6.31+rpt-rpi-2712                           |
-+----------------------------------------------------------------+
-|  OVERCLOCKING (/boot/firmware/config.txt)                      |
-|  arm_freq:           2800 MHz (default: 2400)                  |
-|  gpu_freq:           1000 MHz (default: 910)                   |
-|  over_voltage_delta: 50000 uV (+50.0mV)                        |
-|  force_turbo:        1                                         |
-+----------------------------------------------------------------+
-|  STORAGE                                                       |
-|  NVMe Detected:      Samsung 980 PRO 500GB                     |
-|  PCIe Generation:    Gen 3.0 x1 (~900 MB/s)                    |
-|  NVMe Temperature:   35C                                       |
-+----------------------------------------------------------------+
-```
+<img width="1098" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Info-v0_1_8_a.png" />
 
 ## Stability Test Report
 
-After the test completes, a detailed report is generated:
-
-```
-===================================================================
-                    STABILITY TEST RESULTS
-===================================================================
-Duration:          30:00
-Result:            PASSED (system is stable)
-
-Workloads:
-  CPU Stress:        [OK] No computation errors
-  Memory Stress:     [OK] All patterns verified
-  NVMe Stress:       [OK] No I/O errors
-
-Temperature Stats:
-  CPU Max:         82.0C (threshold: 85C)
-  CPU Avg:         76.5C
-  NVMe Max:        52.0C
-
-Events:
-  Throttling:      0
-  Under-voltage:   0
-  I/O Errors:      0
-  SMART Warnings:  0
-===================================================================
-```
+<img width="852" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Results-v0_1_8_a.png" />
 
 ## Requirements
 

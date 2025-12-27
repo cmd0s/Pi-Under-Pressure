@@ -23,14 +23,14 @@ use crate::stress::StressStats;
 
 /// ASCII art title - "Pi Under Pressure" in Fire Font-s style
 const ASCII_TITLE: &[&str] = &[
-    r" (                 ) (         (      (   (       (   (         (        ",
-    r" )\ )           ( /( )\ )      )\ )   )\ ))\ )    )\ ))\ )      )\ )     ",
-    r"(()/((       (  )\()|()/(  (  (()/(  (()/(()/((  (()/(()/(   ( (()/((    ",
-    r" /(_))\      )\((_)\ /(_)) )\  /(_))  /(_))(_))\  /(_))(_))  )\ /(_))\   ",
-    r"(_))((_)  _ ((_)_((_|_))_ ((_)(_))   (_))(_))((_)(_))(_)) _ ((_|_))((_)  ",
-    r"| _ \(_) | | | | \| ||   \| __| _ \  | _ \ _ \ __/ __/ __| | | | _ \ __| ",
-    r"|  _/| | | |_| | .` || |) | _||   /  |  _/   / _|\__ \__ \ |_| |   / _|  ",
-    r"|_|  |_|  \___/|_|\_||___/|___|_|_\  |_| |_|_\___|___/___/\___/|_|_\___| ",
+    r"   (                 ) (         (      (   (       (   (         (        ",
+    r"   )\ )           ( /( )\ )      )\ )   )\ ))\ )    )\ ))\ )      )\ )     ",
+    r"  (()/((       (  )\()|()/(  (  (()/(  (()/(()/((  (()/(()/(   ( (()/((    ",
+    r"   /(_))\      )\((_)\ /(_)) )\  /(_))  /(_))(_))\  /(_))(_))  )\ /(_))\   ",
+    r"  (_))((_)  _ ((_)_((_|_))_ ((_)(_))   (_))(_))((_)(_))(_)) _ ((_|_))((_)  ",
+    r"  | _ \(_) | | | | \| ||   \| __| _ \  | _ \ _ \ __/ __/ __| | | | _ \ __| ",
+    r"  |  _/| | | |_| | .` || |) | _||   /  |  _/   / _|\__ \__ \ |_| |   / _|  ",
+    r"  |_|  |_|  \___/|_|\_||___/|___|_|_\  |_| |_|_\___|___/___/\___/|_|_\___| ",
 ];
 
 /// Height constants for layout
@@ -418,13 +418,22 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
     let remaining_secs = total_secs.saturating_sub(stats.elapsed_secs);
     let remaining_str = format_duration(remaining_secs);
 
+    // Render the block/border on full area
+    let block = Block::default()
+        .title(" Progress ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan));
+    frame.render_widget(block, area);
+
+    // Calculate inner area (inside the border, with padding)
+    let gauge_area = Rect {
+        x: area.x + 3,                         // border (1) + padding (2)
+        y: area.y + 1,                         // border (1)
+        width: area.width.saturating_sub(6),   // borders (2) + padding (4)
+        height: area.height.saturating_sub(2), // borders (2)
+    };
+
     let gauge = Gauge::default()
-        .block(
-            Block::default()
-                .title(" Progress ")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan)),
-        )
         .gauge_style(Style::default().fg(Color::Cyan).bg(Color::DarkGray))
         .percent((stats.progress_percent as u16).min(100))
         .label(format!(
@@ -432,7 +441,7 @@ fn render_progress(frame: &mut Frame, area: Rect, stats: &StressStats, total_sec
             stats.progress_percent, remaining_str
         ));
 
-    frame.render_widget(gauge, area);
+    frame.render_widget(gauge, gauge_area);
 }
 
 fn render_footer(frame: &mut Frame, area: Rect) {
