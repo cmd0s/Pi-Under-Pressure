@@ -6,7 +6,7 @@ Pi Under Pressure is a comprehensive stress testing tool designed specifically f
 
 ## Screenshoot
 
-<img width="1426" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Main-v0_1_8_a.png" />
+<img width="1402" alt="Pi-Under-Pressure-Screen-Main-v0_1_8_a" src="img/Pi-Under-Pressure-Screen-Main-v0_1_8_a.png" />
 
 ## Features
 
