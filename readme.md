@@ -106,7 +106,7 @@ On startup, Pi Under Pressure displays comprehensive system information:
 
 ```
 +----------------------------------------------------------------+
-|  Pi Under Pressure v0.1.0 - Stability Tester for RPi5          |
+|  Pi Under Pressure v0.1.8 - Stability Tester for RPi5          |
 +----------------------------------------------------------------+
 |  SYSTEM                                                        |
 |  Model:          Raspberry Pi 5 Model B Rev 1.0                |
