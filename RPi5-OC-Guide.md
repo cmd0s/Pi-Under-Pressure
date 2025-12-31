@@ -429,7 +429,7 @@ sudo pi-under-pressure -d 1h -V
 
 | Component | Workloads |
 |-----------|-----------|
-| **CPU** | FFT, Matrix Multiplication, Prime Sieve, AES-256 Encryption |
+| **CPU** | DFT, Matrix Multiplication, Prime Sieve, AES-256 Encryption |
 | **RAM** | Sequential patterns, Random access, Fill & verify, STREAM-like bandwidth |
 | **NVMe** | 4K random I/O, Sequential read/write, Mixed workload |
 | **Video** | H.264/H.265 hardware encoding (optional) |

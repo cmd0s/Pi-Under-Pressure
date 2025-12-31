@@ -13,7 +13,7 @@ pub fn run_cpu_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>) {
         // Rotate between different stress methods
         match iteration % 4 {
             0 => {
-                if !run_fft_stress() {
+                if !run_dft_stress() {
                     errors.fetch_add(1, Ordering::Relaxed);
                 }
             }
@@ -39,8 +39,8 @@ pub fn run_cpu_stress(running: Arc<AtomicBool>, errors: Arc<AtomicU64>) {
     }
 }
 
-/// FFT stress test - floating-point intensive
-fn run_fft_stress() -> bool {
+/// DFT stress test - floating-point intensive
+fn run_dft_stress() -> bool {
     const SIZE: usize = 4096;
 
     // Create test data
@@ -185,8 +185,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_fft_stress() {
-        assert!(run_fft_stress());
+    fn test_dft_stress() {
+        assert!(run_dft_stress());
     }
 
     #[test]
