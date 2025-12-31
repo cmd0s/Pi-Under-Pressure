@@ -127,7 +127,7 @@ The D0 stepping features significant improvements:
 | Parameter | Default Value | Description |
 |-----------|---------------|-------------|
 | `arm_freq` | 2400 MHz | CPU frequency |
-| `gpu_freq` | 800 MHz | VideoCore VII frequency |
+| `gpu_freq` | 910 MHz | VideoCore VII frequency |
 | `over_voltage` | 0 | Voltage offset (legacy) |
 | `over_voltage_delta` | 0 | Voltage offset in microvolts (recommended) |
 | `force_turbo` | 0 | DVFS enabled (default) |
@@ -137,14 +137,14 @@ The D0 stepping features significant improvements:
 | Parameter | Range | Description |
 |-----------|-------|-------------|
 | `arm_freq` | 2400-3000+ MHz | CPU clock frequency |
-| `gpu_freq` | 800-1100 MHz | GPU clock frequency |
+| `gpu_freq` | 910-1100 MHz | GPU clock frequency |
 | `over_voltage_delta` | 0-50000+ µV | Voltage adjustment (preserves DVFS) |
 | `over_voltage` | 0-8 | Legacy voltage offset (disables DVFS) |
 | `force_turbo` | 0 or 1 | Force maximum frequency always |
 
 > **Tip: Start with CPU only**
 >
-> When beginning your overclocking journey, focus on `arm_freq` first and leave `gpu_freq` at default (800 MHz). This makes troubleshooting easier — if you change both simultaneously and experience instability, you won't know which one is causing the problem. Only increase `gpu_freq` after you've found a stable CPU frequency, and only if you have a specific use case (desktop graphics, V3D, video encoding).
+> When beginning your overclocking journey, focus on `arm_freq` first and leave `gpu_freq` at default (910 MHz). This makes troubleshooting easier — if you change both simultaneously and experience instability, you won't know which one is causing the problem. Only increase `gpu_freq` after you've found a stable CPU frequency, and only if you have a specific use case (desktop graphics, V3D, video encoding).
 
 ### Why Use over_voltage_delta Instead of over_voltage?
 
